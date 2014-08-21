@@ -2,6 +2,7 @@
 layout: post
 title: "Oracle 11.2.0.1 Active DataGuard的一个Bug"
 date: 2014-08-22 00:13:49 +0800
+comments: true
 categories: 
 ---
 昨天在线下环境遇到一个Oracle的bug。现象为MRP进程中断，导致无法恢复恢复归档。  
