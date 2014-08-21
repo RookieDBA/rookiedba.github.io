@@ -4,7 +4,7 @@
   <title><![CDATA[RookieDBA]]></title>
   <link href="http://RookieDBA.github.io/atom.xml" rel="self"/>
   <link href="http://RookieDBA.github.io/"/>
-  <updated>2014-08-22T00:03:12+08:00</updated>
+  <updated>2014-08-22T00:07:32+08:00</updated>
   <id>http://RookieDBA.github.io/</id>
   <author>
     <name><![CDATA[RookieDBA]]></name>
@@ -31,30 +31,40 @@
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>然后到os中，用expdp命令导出数据
-expdp system/password schemas=schema_name directory=dump dumpfile=out_file_name.dmp logfile=log_file_name.log;<br/>
-则会在dump目录下生成dmp文件和log文件，这里的directory就是之前在Oracle中创建的directory。</p>
+<p>然后到os中，用expdp命令导出数据</p>
+
+<figure class='code'><figcaption><span>expdp</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">expdp</span> <span class="k">system</span><span class="o">/</span><span class="n">password</span> <span class="n">schemas</span><span class="o">=</span><span class="k">schema_name</span> <span class="n">directory</span><span class="o">=</span><span class="n">dump</span> <span class="n">dumpfile</span><span class="o">=</span><span class="n">out_file_name</span><span class="p">.</span><span class="n">dmp</span> <span class="n">logfile</span><span class="o">=</span><span class="n">log_file_name</span><span class="p">.</span><span class="n">log</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>则会在dump目录下生成dmp文件和log文件，这里的directory就是之前在Oracle中创建的directory。</p>
 
 <h1>IMPDP</h1>
 
-<pre><code>   用impdp来导入数据和前面一样，dmp文件就是之前expdp出来的dmp文件。
-   impdp system/password schemas=schema_name directory=dump dumpfile=imp_file.dmp logfile=log_imp.log;
-   impdp似乎可以直接和expdp连接使用，就可以边导出边导入了，有待研究。
-</code></pre>
+<p>用impdp来导入数据和前面一样，dmp文件就是之前expdp出来的dmp文件。</p>
+
+<figure class='code'><figcaption><span>impdp</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">impdp</span> <span class="k">system</span><span class="o">/</span><span class="n">password</span> <span class="n">schemas</span><span class="o">=</span><span class="k">schema_name</span> <span class="n">directory</span><span class="o">=</span><span class="n">dump</span> <span class="n">dumpfile</span><span class="o">=</span><span class="n">imp_file</span><span class="p">.</span><span class="n">dmp</span> <span class="n">logfile</span><span class="o">=</span><span class="n">log_imp</span><span class="p">.</span><span class="n">log</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>impdp似乎可以直接和expdp连接使用，就可以边导出边导入了，有待研究。</p>
 
 <h1>关于NETWORK_LINK参数</h1>
 
-<pre><code>  如果有指定NETWORK_LINK参数，则可以远程传输至目标端，network_link的值为dblink的名字。
-  首先，在目标端库建立一个dblink至源端。
-  expdp指定network_link参数将可以直接在目标端生成dump文件。
-  impdp指定network_link参数，可以直接绕过生成dump文件，直接从源端导出并导入目标端。  
-</code></pre>
+<p>如果有指定NETWORK_LINK参数，则可以远程传输至目标端，network_link的值为dblink的名字。<br/>
+首先，在目标端库建立一个dblink至源端。<br/>
+expdp指定network_link参数将可以直接在目标端生成dump文件。<br/>
+impdp指定network_link参数，可以直接绕过生成dump文件，直接从源端导出并导入目标端。<br/>
+相应的EXP和IMP就简单一点（buffer设大一点快，exp不小于64000，imp不小于100000）</p>
 
-<p>相应的EXP和IMP就简单一点（buffer设大一点快，exp不小于64000，imp不小于100000）</p>
+<figure class='code'><figcaption><span>exp/imp</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">exp</span> <span class="k">schema_name</span><span class="o">/</span><span class="n">password</span>  <span class="n">BUFFER</span><span class="o">=</span><span class="mi">1000000000</span> <span class="n">FILE</span><span class="o">=/</span><span class="k">data</span><span class="o">/</span><span class="n">oradata</span><span class="o">/</span><span class="n">dump</span><span class="o">/</span><span class="n">out_file_name</span><span class="p">.</span><span class="n">dmp</span> <span class="k">OWNER</span><span class="o">=</span><span class="k">schema_name</span> <span class="n">log</span><span class="o">=</span><span class="n">logfile</span><span class="p">.</span><span class="n">log</span>
+</span><span class='line'><span class="n">imp</span> <span class="k">schema_name</span><span class="o">/</span><span class="n">password</span>  <span class="n">BUFFER</span><span class="o">=</span><span class="mi">1000000000</span> <span class="n">FILE</span><span class="o">=/</span><span class="k">data</span><span class="o">/</span><span class="n">oradata</span><span class="o">/</span><span class="n">dump</span><span class="o">/</span><span class="n">imp_file_name</span><span class="p">.</span><span class="n">dmp</span>  <span class="n">FROMUSER</span><span class="o">=</span><span class="n">from_schema</span> <span class="n">TOUSER</span><span class="o">=</span><span class="k">schema_name</span> <span class="n">log</span><span class="o">=</span><span class="n">logfile</span><span class="p">.</span><span class="n">log</span>
+</span></code></pre></td></tr></table></div></figure>
 
-<pre><code>   exp schema_name/password  BUFFER=640000 FILE=/data/oradata/dump/out_file_name.dmp OWNER=schema_name log=logfile.log  
-   imp schema_name/password  BUFFER=640000 FILE=/data/oradata/dump/imp_file_name.dmp  FROMUSER=from_schema TOUSER=schema_name log=logfile.log
-</code></pre>
 ]]></content>
   </entry>
   
