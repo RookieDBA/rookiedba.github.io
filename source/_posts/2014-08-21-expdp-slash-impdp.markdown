@@ -8,10 +8,11 @@ categories:
 今天用expdp和impdp做数据迁移，针对整个schema的数据导入导出，也很有幸体验到了exp和expdp在速度上的差别，因为exp要过一层buffer，所以速度上慢特别多，一个67G数据的schema，用expdp大概花了半个小时，而exp半个小时大概生成3G左右的数据，速度上还是相差很大的。
 
 #EXPDP
-用expdp之前要在oracle中创建一个directory。  
+用expdp之前要在oracle中创建一个directory。    
+``` sql directory
+conn / as sysdba
+create or replace directory dir_name as ‘/path’;
 ```
-       conn / as sysdba
-       create or replace directory dir_name as ‘/path’;```  
 然后到os中，用expdp命令导出数据
 expdp system/password schemas=schema_name directory=dump dumpfile=out_file_name.dmp logfile=log_file_name.log;  
 则会在dump目录下生成dmp文件和log文件，这里的directory就是之前在Oracle中创建的directory。
