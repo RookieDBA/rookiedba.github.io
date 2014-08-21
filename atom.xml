@@ -4,7 +4,7 @@
   <title><![CDATA[RookieDBA]]></title>
   <link href="http://RookieDBA.github.io/atom.xml" rel="self"/>
   <link href="http://RookieDBA.github.io/"/>
-  <updated>2014-08-22T00:30:13+08:00</updated>
+  <updated>2014-08-22T01:22:04+08:00</updated>
   <id>http://RookieDBA.github.io/</id>
   <author>
     <name><![CDATA[RookieDBA]]></name>
@@ -12,6 +12,139 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[一次业务设计失误，因唯一性索引导致的enq: TX – Row Lock Contention总结]]></title>
+    <link href="http://RookieDBA.github.io/blog/2014/08/22/an-case-of-enq-tx-row-lock-contention/"/>
+    <updated>2014-08-22T01:14:21+08:00</updated>
+    <id>http://RookieDBA.github.io/blog/2014/08/22/an-case-of-enq-tx-row-lock-contention</id>
+    <content type="html"><![CDATA[<p>年前，一个系统发布，刚上线就导致了大量的enq。之前一直没写下来，今天静下心记录一下。</p>
+
+<p>业务上对某张表T进行insert操作，并且伴随着并发。T表中的HID字段因为业务需求有唯一性约束，所以这个字段上有唯一性约束并且有唯一索引。而HID的值需要通过一次额WS调用才能取得，为了提高系统吞吐量，减少响应时间，这里采取异步化的方式。然而业务设计上insert时先给HID字段初始0值，然后再update。由于有唯一性索引的关系，加上并发，导致大量session等待这个行级锁。</p>
+
+<p>我们知道Oracle的索引会根据索引列的值进行排序，而对于唯一性索引来说，每个值在索引上只有一个位置可以写，所以大量的session等到0这个值的索引块的锁释放。</p>
+
+<p>下面来重现一下这个场景：</p>
+
+<p>1、建一张表T，字段HID建唯一性索引，并insert值为0的记录</p>
+
+<figure class='code'><figcaption><span>1、建一张表T，字段HID建唯一性索引，并insert值为0的记录</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">yuqing</span><span class="o">@</span><span class="n">TOOLDB</span><span class="o">&gt;</span><span class="k">set</span> <span class="n">sqlp</span> <span class="s1">&#39;SESSION A&gt;&#39;</span>
+</span><span class='line'><span class="k">SESSION</span> <span class="n">A</span><span class="o">&gt;</span><span class="k">create</span> <span class="k">table</span> <span class="n">t</span><span class="p">(</span><span class="n">hid</span> <span class="nb">number</span><span class="p">(</span><span class="mi">16</span><span class="p">));</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">Table</span> <span class="n">created</span><span class="p">.</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">SESSION</span> <span class="n">A</span><span class="o">&gt;</span><span class="k">create</span> <span class="k">unique</span> <span class="k">index</span> <span class="n">t_hid_ind</span> <span class="k">on</span> <span class="n">t</span><span class="p">(</span><span class="n">hid</span><span class="p">)</span> <span class="n">tablespace</span> <span class="n">zhifb_data</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">Index</span> <span class="n">created</span><span class="p">.</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">SESSION</span> <span class="n">A</span><span class="o">&gt;</span><span class="k">insert</span> <span class="k">into</span> <span class="n">t</span> <span class="k">values</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="mi">1</span> <span class="k">row</span> <span class="n">created</span><span class="p">.</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p></p>
+
+<!-- more -->
+
+
+<p></p>
+
+<p>2、然后在session B，也执行同样的insert</p>
+
+<figure class='code'><figcaption><span>2、然后在session B，也执行同样的insert  </span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">yuqing</span><span class="o">@</span><span class="n">TOOLDB</span><span class="o">&gt;</span><span class="k">set</span> <span class="n">sqlp</span> <span class="s1">&#39;SESSION B&gt;&#39;</span>
+</span><span class='line'><span class="k">SESSION</span> <span class="n">B</span><span class="o">&gt;</span><span class="k">insert</span> <span class="k">into</span> <span class="n">t</span> <span class="k">values</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>
+这时候发现，session B hang住了，它在等待session A的事务提交或者回滚</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">sys</span><span class="o">@</span><span class="n">TOOLDB</span><span class="o">&gt;</span><span class="k">select</span> <span class="n">USERNAME</span><span class="p">,</span><span class="n">EVENT</span><span class="p">,</span><span class="n">SQL_ID</span> <span class="k">from</span> <span class="n">v</span><span class="err">$</span><span class="k">session</span> <span class="k">where</span> <span class="n">username</span><span class="o">=</span><span class="s1">&#39;YUQING&#39;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">USERNAME</span>   <span class="n">EVENT</span>                                    <span class="n">SQL_ID</span>
+</span><span class='line'><span class="c1">---------- ---------------------------------------- -------------</span>
+</span><span class='line'><span class="n">YUQING</span>     <span class="k">SQL</span><span class="o">*</span><span class="n">Net</span> <span class="n">message</span> <span class="k">from</span> <span class="n">client</span>
+</span><span class='line'><span class="n">YUQING</span>     <span class="n">enq</span><span class="p">:</span> <span class="n">TX</span> <span class="o">-</span> <span class="k">row</span> <span class="k">lock</span> <span class="n">contention</span>            <span class="mi">70</span><span class="n">nctf7574d1y</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">sys</span><span class="o">@</span><span class="n">TOOLDB</span><span class="o">&gt;</span><span class="k">select</span> <span class="n">sql_id</span><span class="p">,</span><span class="n">sql_text</span> <span class="k">from</span> <span class="n">v</span><span class="err">$</span><span class="k">sql</span> <span class="k">where</span> <span class="n">sql_id</span><span class="o">=</span><span class="s1">&#39;70nctf7574d1y&#39;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">SQL_ID</span>        <span class="n">SQL_TEXT</span>
+</span><span class='line'><span class="c1">------------- ----------------------------</span>
+</span><span class='line'><span class="mi">70</span><span class="n">nctf7574d1y</span> <span class="k">insert</span> <span class="k">into</span> <span class="n">t</span> <span class="k">values</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p></p>
+
+<p>从上面的等待事件可以看出，这里的等待。</p>
+
+<p>解决的方法：</p>
+
+<p>1、业务改造，改为同步方式，接收到正确值以后再insert（牺牲吞吐量和响应时间）</p>
+
+<p>2、最简单的方式，将0改为null</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">SESSION</span> <span class="n">A</span><span class="o">&gt;</span><span class="k">insert</span> <span class="k">into</span> <span class="n">t</span> <span class="k">values</span><span class="p">(</span><span class="k">null</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="mi">1</span> <span class="k">row</span> <span class="n">created</span><span class="p">.</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">SESSION</span> <span class="n">A</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">再另一个</span><span class="k">session</span><span class="err">中执行相同的</span><span class="k">insert</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">SESSION</span> <span class="n">B</span><span class="o">&gt;</span><span class="k">insert</span> <span class="k">into</span> <span class="n">t</span> <span class="k">values</span><span class="p">(</span><span class="k">null</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="mi">1</span> <span class="k">row</span> <span class="n">created</span><span class="p">.</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">SESSION</span> <span class="n">B</span><span class="o">&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p></p>
+
+<p>从上面的实验可以看出，这里将0改为null后并没有产生等待，原因是，在Oracle中，null被定义成为一个不等于任何值的值，也即是说null不等于null，并且null并不会记录索引，唯一键并不需要非空，所以在不确定值的情况采用异步，初始一个null值能达到效果。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[备库创建datafile失败，MRP进程crash的处理]]></title>
@@ -95,8 +228,12 @@
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>
-处理的方式为：<br/>
+<p></p>
+
+<!--more-->
+
+
+<p>处理的方式为：<br/>
 1、备库重新创建数据文件</p>
 
 <figure class='code'><figcaption><span>1、备库重新创建数据文件</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
@@ -207,8 +344,12 @@
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>
-根据关键字<code>kcbr_apply_change_11</code>查找<code>metalink</code>，发现这是一个Oracle的bug。</p>
+<p></p>
+
+<!--more-->
+
+
+<p>根据关键字<code>kcbr_apply_change_11</code>查找<code>metalink</code>，发现这是一个Oracle的bug。</p>
 
 <figure class='code'><figcaption><span>Bug 10419984 – Active data guard standby gets ORA-600 [kcbr_apply_change_11] [ID 10419984.8]</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -318,6 +459,9 @@
 <p>impdp似乎可以直接和expdp连接使用，就可以边导出边导入了，有待研究。</p>
 
 <hr />
+
+<!--more-->
+
 
 <h1>关于NETWORK_LINK参数</h1>
 

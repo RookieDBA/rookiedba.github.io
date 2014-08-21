@@ -1,0 +1,339 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>一次业务设计失误，因唯一性索引导致的enq: TX – Row Lock Contention总结 - RookieDBA</title>
+  <meta name="author" content="RookieDBA">
+
+  
+  <meta name="description" content="年前，一个系统发布，刚上线就导致了大量的enq。之前一直没写下来，今天静下心记录一下。 业务上对某张表T进行insert操作，并且伴随着并发。T表中的HID字段因为业务需求有唯一性约束，所以这个字段上有唯一性约束并且有唯一索引。而HID的值需要通过一次额WS调用才能取得，为了提高系统吞吐量， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://RookieDBA.github.io/blog/2014/08/22/an-case-of-enq-tx-row-lock-contention">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="RookieDBA" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">RookieDBA</a></h1>
+  
+    <h2>RookieDBA的学习基地</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:RookieDBA.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">首页</a></li>
+  <li><a href="/blog/oracle">Oracle</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">一次业务设计失误，因唯一性索引导致的enq: TX – Row Lock Contention总结</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-08-22T01:14:21+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>22</span><span class='date-suffix'>nd</span>, <span class='date-year'>2014</span></span> <span class='time'>1:14 am</span></time>
+        
+           | <a href="#disqus_thread"
+             data-disqus-identifier="http://RookieDBA.github.io">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>年前，一个系统发布，刚上线就导致了大量的enq。之前一直没写下来，今天静下心记录一下。</p>
+
+<p>业务上对某张表T进行insert操作，并且伴随着并发。T表中的HID字段因为业务需求有唯一性约束，所以这个字段上有唯一性约束并且有唯一索引。而HID的值需要通过一次额WS调用才能取得，为了提高系统吞吐量，减少响应时间，这里采取异步化的方式。然而业务设计上insert时先给HID字段初始0值，然后再update。由于有唯一性索引的关系，加上并发，导致大量session等待这个行级锁。</p>
+
+<p>我们知道Oracle的索引会根据索引列的值进行排序，而对于唯一性索引来说，每个值在索引上只有一个位置可以写，所以大量的session等到0这个值的索引块的锁释放。</p>
+
+<p>下面来重现一下这个场景：</p>
+
+<p>1、建一张表T，字段HID建唯一性索引，并insert值为0的记录</p>
+
+<div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>1、建一张表T，字段HID建唯一性索引，并insert值为0的记录</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">yuqing</span><span class="o">@</span><span class="n">TOOLDB</span><span class="o">&gt;</span><span class="k">set</span> <span class="n">sqlp</span> <span class="s1">&#39;SESSION A&gt;&#39;</span>
+</span><span class='line'><span class="k">SESSION</span> <span class="n">A</span><span class="o">&gt;</span><span class="k">create</span> <span class="k">table</span> <span class="n">t</span><span class="p">(</span><span class="n">hid</span> <span class="nb">number</span><span class="p">(</span><span class="mi">16</span><span class="p">));</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">Table</span> <span class="n">created</span><span class="p">.</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">SESSION</span> <span class="n">A</span><span class="o">&gt;</span><span class="k">create</span> <span class="k">unique</span> <span class="k">index</span> <span class="n">t_hid_ind</span> <span class="k">on</span> <span class="n">t</span><span class="p">(</span><span class="n">hid</span><span class="p">)</span> <span class="n">tablespace</span> <span class="n">zhifb_data</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">Index</span> <span class="n">created</span><span class="p">.</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">SESSION</span> <span class="n">A</span><span class="o">&gt;</span><span class="k">insert</span> <span class="k">into</span> <span class="n">t</span> <span class="k">values</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="mi">1</span> <span class="k">row</span> <span class="n">created</span><span class="p">.</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+
+<p></p>
+
+<!-- more -->
+
+
+<p></p>
+
+<p>2、然后在session B，也执行同样的insert</p>
+
+<div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>2、然后在session B，也执行同样的insert  </span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">yuqing</span><span class="o">@</span><span class="n">TOOLDB</span><span class="o">&gt;</span><span class="k">set</span> <span class="n">sqlp</span> <span class="s1">&#39;SESSION B&gt;&#39;</span>
+</span><span class='line'><span class="k">SESSION</span> <span class="n">B</span><span class="o">&gt;</span><span class="k">insert</span> <span class="k">into</span> <span class="n">t</span> <span class="k">values</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+
+<p>
+这时候发现，session B hang住了，它在等待session A的事务提交或者回滚</p>
+
+<div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">sys</span><span class="o">@</span><span class="n">TOOLDB</span><span class="o">&gt;</span><span class="k">select</span> <span class="n">USERNAME</span><span class="p">,</span><span class="n">EVENT</span><span class="p">,</span><span class="n">SQL_ID</span> <span class="k">from</span> <span class="n">v</span><span class="err">$</span><span class="k">session</span> <span class="k">where</span> <span class="n">username</span><span class="o">=</span><span class="s1">&#39;YUQING&#39;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">USERNAME</span>   <span class="n">EVENT</span>                                    <span class="n">SQL_ID</span>
+</span><span class='line'><span class="c1">---------- ---------------------------------------- -------------</span>
+</span><span class='line'><span class="n">YUQING</span>     <span class="k">SQL</span><span class="o">*</span><span class="n">Net</span> <span class="n">message</span> <span class="k">from</span> <span class="n">client</span>
+</span><span class='line'><span class="n">YUQING</span>     <span class="n">enq</span><span class="p">:</span> <span class="n">TX</span> <span class="o">-</span> <span class="k">row</span> <span class="k">lock</span> <span class="n">contention</span>            <span class="mi">70</span><span class="n">nctf7574d1y</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">sys</span><span class="o">@</span><span class="n">TOOLDB</span><span class="o">&gt;</span><span class="k">select</span> <span class="n">sql_id</span><span class="p">,</span><span class="n">sql_text</span> <span class="k">from</span> <span class="n">v</span><span class="err">$</span><span class="k">sql</span> <span class="k">where</span> <span class="n">sql_id</span><span class="o">=</span><span class="s1">&#39;70nctf7574d1y&#39;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">SQL_ID</span>        <span class="n">SQL_TEXT</span>
+</span><span class='line'><span class="c1">------------- ----------------------------</span>
+</span><span class='line'><span class="mi">70</span><span class="n">nctf7574d1y</span> <span class="k">insert</span> <span class="k">into</span> <span class="n">t</span> <span class="k">values</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+
+<p></p>
+
+<p>从上面的等待事件可以看出，这里的等待。</p>
+
+<p>解决的方法：</p>
+
+<p>1、业务改造，改为同步方式，接收到正确值以后再insert（牺牲吞吐量和响应时间）</p>
+
+<p>2、最简单的方式，将0改为null</p>
+
+<div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">SESSION</span> <span class="n">A</span><span class="o">&gt;</span><span class="k">insert</span> <span class="k">into</span> <span class="n">t</span> <span class="k">values</span><span class="p">(</span><span class="k">null</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="mi">1</span> <span class="k">row</span> <span class="n">created</span><span class="p">.</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">SESSION</span> <span class="n">A</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">再另一个</span><span class="k">session</span><span class="err">中执行相同的</span><span class="k">insert</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">SESSION</span> <span class="n">B</span><span class="o">&gt;</span><span class="k">insert</span> <span class="k">into</span> <span class="n">t</span> <span class="k">values</span><span class="p">(</span><span class="k">null</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="mi">1</span> <span class="k">row</span> <span class="n">created</span><span class="p">.</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">SESSION</span> <span class="n">B</span><span class="o">&gt;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
+
+
+<p></p>
+
+<p>从上面的实验可以看出，这里将0改为null后并没有产生等待，原因是，在Oracle中，null被定义成为一个不等于任何值的值，也即是说null不等于null，并且null并不会记录索引，唯一键并不需要非空，所以在不确定值的情况采用异步，初始一个null值能达到效果。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">RookieDBA</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2014-08-22T01:14:21+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>22</span><span class='date-suffix'>nd</span>, <span class='date-year'>2014</span></span> <span class='time'>1:14 am</span></time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2014/08/22/standby-datafile-mrp-crash/" title="Previous Post: 备库创建datafile失败，MRP进程crash的处理">&laquo; 备库创建datafile失败，MRP进程crash的处理</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+    <h1>新浪微博</h1>
+    <ul id="weibo">
+    <li>
+    <iframe width="100%" height="550" class="share_self"  frameborder="0" scrolling="no" src="http://widget.weibo.com/weiboshow/index.php?language=&width=0&height=550&fansRow=1&ptype=1&speed=0&skin=9&isTitle=1&noborder=1&isWeibo=0&isFans=0&uid=1992125701&verifier=996dff3a&dpc=1"></iframe>
+    </li>
+    </ul>
+</section>
+<section>
+  <h1>近期文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/08/22/an-case-of-enq-tx-row-lock-contention/">一次业务设计失误，因唯一性索引导致的enq: TX – Row Lock Contention总结</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/08/22/standby-datafile-mrp-crash/">备库创建datafile失败，MRP进程crash的处理</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/08/22/oracle-11-dot-2-0-dot-1-active-dataguard-bug/">Oracle 11.2.0.1 Active DataGuard的一个Bug</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/08/21/expdp-slash-impdp/">Expdp/impdp</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2014 - RookieDBA -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'RookieDBA';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://RookieDBA.github.io/blog/2014/08/22/an-case-of-enq-tx-row-lock-contention/';
+        var disqus_url = 'http://RookieDBA.github.io/blog/2014/08/22/an-case-of-enq-tx-row-lock-contention/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

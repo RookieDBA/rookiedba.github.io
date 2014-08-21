@@ -166,8 +166,12 @@ recover managed standby database using current logfile disconnect; 日志如下�
 </span></code></pre></td></tr></table></div></figure></notextile></div>
 
 
-<p>
-根据关键字<code>kcbr_apply_change_11</code>查找<code>metalink</code>，发现这是一个Oracle的bug。</p>
+<p></p>
+
+<!--more-->
+
+
+<p>根据关键字<code>kcbr_apply_change_11</code>查找<code>metalink</code>，发现这是一个Oracle的bug。</p>
 
 <div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>Bug 10419984 – Active data guard standby gets ORA-600 [kcbr_apply_change_11] [ID 10419984.8]</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -291,6 +295,10 @@ recover managed standby database using current logfile disconnect; 日志如下�
 <section>
   <h1>近期文章</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/08/22/an-case-of-enq-tx-row-lock-contention/">一次业务设计失误，因唯一性索引导致的enq: TX – Row Lock Contention总结</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2014/08/22/standby-datafile-mrp-crash/">备库创建datafile失败，MRP进程crash的处理</a>
