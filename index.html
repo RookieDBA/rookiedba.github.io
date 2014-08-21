@@ -9,7 +9,10 @@
   <meta name="author" content="RookieDBA">
 
   
-  <meta name="description" content="今天用expdp和impdp做数据迁移，针对整个schema的数据导入导出，也很有幸体验到了exp和expdp在速度上的差别，因为exp要过一层buffer，所以速度上慢特别多，一个67G数据的schema，用expdp大概花了半个小时，而exp半个小时大概生成3G左右的数据，速度上还是相差很大的 &hellip;">
+  <meta name="description" content="昨天在线下环境遇到一个Oracle的bug。现象为MRP进程中断，导致无法恢复恢复归档。
+重新恢复应用归档，导致600错误，MRP进程中断 1
+recover managed standby database using current logfile disconnect; 日志如下： 1
+2 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -72,6 +75,177 @@
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2014/08/22/oracle-11-dot-2-0-dot-1-active-dataguard-bug/">Oracle 11.2.0.1 Active DataGuard的一个Bug</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-08-22T00:13:49+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>22</span><span class='date-suffix'>nd</span>, <span class='date-year'>2014</span></span> <span class='time'>12:13 am</span></time>
+        
+           | <a href="/blog/2014/08/22/oracle-11-dot-2-0-dot-1-active-dataguard-bug/#disqus_thread"
+             data-disqus-identifier="http://RookieDBA.github.io/blog/2014/08/22/oracle-11-dot-2-0-dot-1-active-dataguard-bug/">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>昨天在线下环境遇到一个Oracle的bug。现象为MRP进程中断，导致无法恢复恢复归档。<br/>
+重新恢复应用归档，导致600错误，MRP进程中断</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">recover</span> <span class="n">managed</span> <span class="n">standby</span> <span class="k">database</span> <span class="k">using</span> <span class="k">current</span> <span class="n">logfile</span> <span class="k">disconnect</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>日志如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">Completed</span><span class="p">:</span> <span class="k">ALTER</span> <span class="k">DATABASE</span> <span class="n">RECOVER</span> <span class="n">managed</span> <span class="n">standby</span> <span class="k">database</span> <span class="k">using</span> <span class="k">current</span> <span class="n">logfile</span> <span class="k">disconnect</span>
+</span><span class='line'><span class="n">Media</span> <span class="n">Recovery</span> <span class="n">Log</span> <span class="o">/</span><span class="k">data</span><span class="o">/</span><span class="n">arch</span><span class="o">/</span><span class="n">mysid</span><span class="o">/</span><span class="n">mysid_1_27059_794419612</span><span class="p">.</span><span class="n">arc</span>
+</span><span class='line'><span class="n">Sat</span> <span class="nb">Dec</span> <span class="mi">22</span> <span class="mi">19</span><span class="p">:</span><span class="mi">05</span><span class="p">:</span><span class="mi">04</span> <span class="mi">2012</span>
+</span><span class='line'><span class="n">Errors</span> <span class="k">in</span> <span class="n">file</span> <span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">oracle</span><span class="o">/</span><span class="n">mysid</span><span class="o">/</span><span class="n">diag</span><span class="o">/</span><span class="n">rdbms</span><span class="o">/</span><span class="n">mysid</span><span class="o">/</span><span class="n">mysid</span><span class="o">/</span><span class="n">trace</span><span class="o">/</span><span class="n">mysid_pr0d_8142</span><span class="p">.</span><span class="n">trc</span> <span class="p">(</span><span class="n">incident</span><span class="o">=</span><span class="mi">626085</span><span class="p">):</span>
+</span><span class='line'><span class="n">ORA</span><span class="o">-</span><span class="mi">00600</span><span class="p">:</span> <span class="n">internal</span> <span class="n">error</span> <span class="n">code</span><span class="p">,</span> <span class="n">arguments</span><span class="p">:</span> <span class="p">[</span><span class="n">kcbr_apply_change_11</span><span class="p">],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
+</span><span class='line'><span class="n">Incident</span> <span class="n">details</span> <span class="k">in</span><span class="p">:</span> <span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">oracle</span><span class="o">/</span><span class="n">mysid</span><span class="o">/</span><span class="n">diag</span><span class="o">/</span><span class="n">rdbms</span><span class="o">/</span><span class="n">mysid</span><span class="o">/</span><span class="n">mysid</span><span class="o">/</span><span class="n">incident</span><span class="o">/</span><span class="n">incdir_626085</span><span class="o">/</span><span class="n">mysid_pr0d_8142_i626085</span><span class="p">.</span><span class="n">trc</span>
+</span><span class='line'><span class="n">Slave</span> <span class="n">exiting</span> <span class="k">with</span> <span class="n">ORA</span><span class="o">-</span><span class="mi">600</span> <span class="k">exception</span>
+</span><span class='line'><span class="n">Errors</span> <span class="k">in</span> <span class="n">file</span> <span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">oracle</span><span class="o">/</span><span class="n">mysid</span><span class="o">/</span><span class="n">diag</span><span class="o">/</span><span class="n">rdbms</span><span class="o">/</span><span class="n">mysid</span><span class="o">/</span><span class="n">mysid</span><span class="o">/</span><span class="n">trace</span><span class="o">/</span><span class="n">mysid_pr0d_8142</span><span class="p">.</span><span class="n">trc</span><span class="p">:</span>
+</span><span class='line'><span class="n">ORA</span><span class="o">-</span><span class="mi">00600</span><span class="p">:</span> <span class="n">internal</span> <span class="n">error</span> <span class="n">code</span><span class="p">,</span> <span class="n">arguments</span><span class="p">:</span> <span class="p">[</span><span class="n">kcbr_apply_change_11</span><span class="p">],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
+</span><span class='line'><span class="n">Errors</span> <span class="k">in</span> <span class="n">file</span> <span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">oracle</span><span class="o">/</span><span class="n">mysid</span><span class="o">/</span><span class="n">diag</span><span class="o">/</span><span class="n">rdbms</span><span class="o">/</span><span class="n">mysid</span><span class="o">/</span><span class="n">mysid</span><span class="o">/</span><span class="n">trace</span><span class="o">/</span><span class="n">mysid_mrp0_8084</span><span class="p">.</span><span class="n">trc</span> <span class="p">(</span><span class="n">incident</span><span class="o">=</span><span class="mi">625909</span><span class="p">):</span>
+</span><span class='line'><span class="n">ORA</span><span class="o">-</span><span class="mi">00600</span><span class="p">:</span> <span class="n">internal</span> <span class="n">error</span> <span class="n">code</span><span class="p">,</span> <span class="n">arguments</span><span class="p">:</span> <span class="p">[</span><span class="n">kcbr_apply_change_11</span><span class="p">],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
+</span><span class='line'><span class="n">Incident</span> <span class="n">details</span> <span class="k">in</span><span class="p">:</span> <span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">oracle</span><span class="o">/</span><span class="n">mysid</span><span class="o">/</span><span class="n">diag</span><span class="o">/</span><span class="n">rdbms</span><span class="o">/</span><span class="n">mysid</span><span class="o">/</span><span class="n">mysid</span><span class="o">/</span><span class="n">incident</span><span class="o">/</span><span class="n">incdir_625909</span><span class="o">/</span><span class="n">mysid_mrp0_8084_i625909</span><span class="p">.</span><span class="n">trc</span>
+</span><span class='line'><span class="n">Sat</span> <span class="nb">Dec</span> <span class="mi">22</span> <span class="mi">19</span><span class="p">:</span><span class="mi">05</span><span class="p">:</span><span class="mi">05</span> <span class="mi">2012</span>
+</span><span class='line'><span class="n">Trace</span> <span class="n">dumping</span> <span class="k">is</span> <span class="n">performing</span> <span class="n">id</span><span class="o">=</span><span class="p">[</span><span class="n">cdmp_20121222190505</span><span class="p">]</span>
+</span><span class='line'><span class="n">Recovery</span> <span class="n">Slave</span> <span class="n">PR0D</span> <span class="n">previously</span> <span class="n">exited</span> <span class="k">with</span> <span class="k">exception</span> <span class="mi">600</span>
+</span><span class='line'><span class="n">MRP0</span><span class="p">:</span> <span class="n">Background</span> <span class="n">Media</span> <span class="n">Recovery</span> <span class="n">terminated</span> <span class="k">with</span> <span class="n">error</span> <span class="mi">448</span>
+</span><span class='line'><span class="n">Errors</span> <span class="k">in</span> <span class="n">file</span> <span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">oracle</span><span class="o">/</span><span class="n">mysid</span><span class="o">/</span><span class="n">diag</span><span class="o">/</span><span class="n">rdbms</span><span class="o">/</span><span class="n">mysid</span><span class="o">/</span><span class="n">mysid</span><span class="o">/</span><span class="n">trace</span><span class="o">/</span><span class="n">mysid_pr00_8089</span><span class="p">.</span><span class="n">trc</span><span class="p">:</span>
+</span><span class='line'><span class="n">ORA</span><span class="o">-</span><span class="mi">00448</span><span class="p">:</span> <span class="n">normal</span> <span class="k">completion</span> <span class="k">of</span> <span class="n">background</span> <span class="n">process</span>
+</span><span class='line'><span class="n">Managed</span> <span class="n">Standby</span> <span class="n">Recovery</span> <span class="k">not</span> <span class="k">using</span> <span class="nb">Real</span> <span class="n">Time</span> <span class="n">Apply</span>
+</span><span class='line'><span class="n">Recovery</span> <span class="n">interrupted</span><span class="o">!</span>
+</span><span class='line'><span class="n">Sat</span> <span class="nb">Dec</span> <span class="mi">22</span> <span class="mi">19</span><span class="p">:</span><span class="mi">05</span><span class="p">:</span><span class="mi">07</span> <span class="mi">2012</span>
+</span><span class='line'><span class="n">Sweep</span> <span class="p">[</span><span class="n">inc</span><span class="p">][</span><span class="mi">626085</span><span class="p">]:</span> <span class="n">completed</span>
+</span><span class='line'><span class="n">Sweep</span> <span class="p">[</span><span class="n">inc</span><span class="p">][</span><span class="mi">625909</span><span class="p">]:</span> <span class="n">completed</span>
+</span><span class='line'><span class="n">Sweep</span> <span class="p">[</span><span class="n">inc2</span><span class="p">][</span><span class="mi">626085</span><span class="p">]:</span> <span class="n">completed</span>
+</span><span class='line'><span class="n">Sweep</span> <span class="p">[</span><span class="n">inc2</span><span class="p">][</span><span class="mi">625909</span><span class="p">]:</span> <span class="n">completed</span>
+</span><span class='line'><span class="n">Recovered</span> <span class="k">data</span> <span class="n">files</span> <span class="k">to</span> <span class="n">a</span> <span class="n">consistent</span> <span class="k">state</span> <span class="k">at</span> <span class="n">change</span> <span class="mi">9887019691275</span>
+</span><span class='line'><span class="n">Errors</span> <span class="k">in</span> <span class="n">file</span> <span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">oracle</span><span class="o">/</span><span class="n">mysid</span><span class="o">/</span><span class="n">diag</span><span class="o">/</span><span class="n">rdbms</span><span class="o">/</span><span class="n">mysid</span><span class="o">/</span><span class="n">mysid</span><span class="o">/</span><span class="n">trace</span><span class="o">/</span><span class="n">mysid_pr00_8089</span><span class="p">.</span><span class="n">trc</span><span class="p">:</span>
+</span><span class='line'><span class="n">ORA</span><span class="o">-</span><span class="mi">00448</span><span class="p">:</span> <span class="n">normal</span> <span class="k">completion</span> <span class="k">of</span> <span class="n">background</span> <span class="n">process</span>
+</span><span class='line'><span class="n">Errors</span> <span class="k">in</span> <span class="n">file</span> <span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">oracle</span><span class="o">/</span><span class="n">mysid</span><span class="o">/</span><span class="n">diag</span><span class="o">/</span><span class="n">rdbms</span><span class="o">/</span><span class="n">mysid</span><span class="o">/</span><span class="n">mysid</span><span class="o">/</span><span class="n">trace</span><span class="o">/</span><span class="n">mysid_mrp0_8084</span><span class="p">.</span><span class="n">trc</span><span class="p">:</span>
+</span><span class='line'><span class="n">ORA</span><span class="o">-</span><span class="mi">00600</span><span class="p">:</span> <span class="n">internal</span> <span class="n">error</span> <span class="n">code</span><span class="p">,</span> <span class="n">arguments</span><span class="p">:</span> <span class="p">[</span><span class="n">kcbr_apply_change_11</span><span class="p">],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
+</span><span class='line'><span class="n">MRP0</span><span class="p">:</span> <span class="n">Background</span> <span class="n">Media</span> <span class="n">Recovery</span> <span class="n">process</span> <span class="n">shutdown</span> <span class="p">(</span><span class="n">mysid</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>
+根据关键字<code>kcbr_apply_change_11</code>查找<code>metalink</code>，发现这是一个Oracle的bug。</p>
+
+<figure class='code'><figcaption><span>Bug 10419984 – Active data guard standby gets ORA-600 [kcbr_apply_change_11] [ID 10419984.8]</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+</pre></td><td class='code'><pre><code class='text'><span class='line'>Bug 10419984 – Active data guard standby gets ORA-600 [kcbr_apply_change_11] [ID 10419984.8]
+</span><span class='line'>
+</span><span class='line'>Rediscovery Notes:
+</span><span class='line'>Look for all the following:
+</span><span class='line'>- ADG media recovery fails with ORA-00600:[kcbr_apply_change_11]
+</span><span class='line'>- primary/ADGstandby configuration
+</span><span class='line'>- there has been at least one primary&lt;-&gt;standby switchover(the evidence is an earlier “SWITCHOVER TO PHYSICAL
+</span><span class='line'>STANDBY” message in the standby alert log)
+</span><span class='line'>- in the incident dump tracefile:
+</span><span class='line'>- the failing redo change vector header is dumped, and the opcode is 18.1 (OP:18.1)
+</span><span class='line'>- in 11.2 look for “Block SCN:” and “Redo SCN:” in 11.1 look for “Redo scn:”
+</span><span class='line'>the scns involved will have the following ordering:
+</span><span class='line'>cv.SCN &lt; Block_SCN &lt; Redo_SCN
+</span><span class='line'>- the block header is dumped and it shows the standby’s version of the block has an ITL entry with:
+</span><span class='line'>Flag=U, Lck!=0, Scn/Fsc=&lt;0×0000.Block_SCN.base#&gt;
+</span><span class='line'>- if you take the Block_SCN, and if you can map it to a date+time, (eg by using time/scn
+</span><span class='line'>data from v$archived_log,or from media recovery messsages in the alert log) then
+</span><span class='line'>you should see the standby was running as the primary database at that time/Block_SCN.
+</span><span class='line'>- alert logs have the message “Lost write protection disabled” written at database mount time
+</span><span class='line'>- after the failure, the ADG media recovery fails the same way even if it is restarted,
+</span><span class='line'>but regular media recovery (ie without the database open read-only) is able to apply the failing redo
+</span><span class='line'>
+</span><span class='line'>Workaround
+</span><span class='line'>
+</span><span class='line'>After the problem has happened:
+</span><span class='line'>shutdown the ADG standby, then mount it, and do media recovery until it has recovered
+</span><span class='line'>past all the redo generated during the hot backup taken on the primary. Then stop media
+</span><span class='line'>recovery, and open the database read only, and restart media recovery again.
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p></p>
+
+<p>根据<code>metalink</code>上的描述，将ADG的物理备库shutdown，然后startup到mount状态，恢复之前的归档之后，open database，再恢复就OK了。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2014/08/21/expdp-slash-impdp/">Expdp/impdp</a></h1>
     
     
@@ -93,6 +267,8 @@
 
   <div class="entry-content"><p>今天用expdp和impdp做数据迁移，针对整个schema的数据导入导出，也很有幸体验到了exp和expdp在速度上的差别，因为exp要过一层buffer，所以速度上慢特别多，一个67G数据的schema，用expdp大概花了半个小时，而exp半个小时大概生成3G左右的数据，速度上还是相差很大的。</p>
 
+<hr />
+
 <h1>EXPDP</h1>
 
 <p>用expdp之前要在oracle中创建一个directory。</p>
@@ -113,6 +289,8 @@
 
 <p>则会在dump目录下生成dmp文件和log文件，这里的directory就是之前在Oracle中创建的directory。</p>
 
+<hr />
+
 <h1>IMPDP</h1>
 
 <p>用impdp来导入数据和前面一样，dmp文件就是之前expdp出来的dmp文件。</p>
@@ -123,6 +301,8 @@
 
 
 <p>impdp似乎可以直接和expdp连接使用，就可以边导出边导入了，有待研究。</p>
+
+<hr />
 
 <h1>关于NETWORK_LINK参数</h1>
 
@@ -138,38 +318,6 @@ impdp指定network_link参数，可以直接绕过生成dump文件，直接从�
 </span><span class='line'><span class="n">imp</span> <span class="k">schema_name</span><span class="o">/</span><span class="n">password</span>  <span class="n">BUFFER</span><span class="o">=</span><span class="mi">1000000000</span> <span class="n">FILE</span><span class="o">=/</span><span class="k">data</span><span class="o">/</span><span class="n">oradata</span><span class="o">/</span><span class="n">dump</span><span class="o">/</span><span class="n">imp_file_name</span><span class="p">.</span><span class="n">dmp</span>  <span class="n">FROMUSER</span><span class="o">=</span><span class="n">from_schema</span> <span class="n">TOUSER</span><span class="o">=</span><span class="k">schema_name</span> <span class="n">log</span><span class="o">=</span><span class="n">logfile</span><span class="p">.</span><span class="n">log</span>
 </span></code></pre></td></tr></table></div></figure>
 
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/08/21/test/">Test</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-08-21T17:16:23+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>21</span><span class='date-suffix'>st</span>, <span class='date-year'>2014</span></span> <span class='time'>5:16 pm</span></time>
-        
-           | <a href="/blog/2014/08/21/test/#disqus_thread"
-             data-disqus-identifier="http://RookieDBA.github.io/blog/2014/08/21/test/">Comments</a>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content">
 </div>
   
   
@@ -198,11 +346,11 @@ impdp指定network_link参数，可以直接绕过生成dump文件，直接从�
   <ul id="recent_posts">
     
       <li class="post">
-        <a href="/blog/2014/08/21/expdp-slash-impdp/">Expdp/impdp</a>
+        <a href="/blog/2014/08/22/oracle-11-dot-2-0-dot-1-active-dataguard-bug/">Oracle 11.2.0.1 Active DataGuard的一个Bug</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2014/08/21/test/">Test</a>
+        <a href="/blog/2014/08/21/expdp-slash-impdp/">Expdp/impdp</a>
       </li>
     
   </ul>

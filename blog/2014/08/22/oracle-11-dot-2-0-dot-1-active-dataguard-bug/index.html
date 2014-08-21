@@ -1,34 +1,107 @@
-<?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[RookieDBA]]></title>
-  <link href="http://RookieDBA.github.io/atom.xml" rel="self"/>
-  <link href="http://RookieDBA.github.io/"/>
-  <updated>2014-08-22T00:18:54+08:00</updated>
-  <id>http://RookieDBA.github.io/</id>
-  <author>
-    <name><![CDATA[RookieDBA]]></name>
-    
-  </author>
-  <generator uri="http://octopress.org/">Octopress</generator>
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Oracle 11.2.0.1 Active DataGuard的一个Bug - RookieDBA</title>
+  <meta name="author" content="RookieDBA">
 
   
-  <entry>
-    <title type="html"><![CDATA[Oracle 11.2.0.1 Active DataGuard的一个Bug]]></title>
-    <link href="http://RookieDBA.github.io/blog/2014/08/22/oracle-11-dot-2-0-dot-1-active-dataguard-bug/"/>
-    <updated>2014-08-22T00:13:49+08:00</updated>
-    <id>http://RookieDBA.github.io/blog/2014/08/22/oracle-11-dot-2-0-dot-1-active-dataguard-bug</id>
-    <content type="html"><![CDATA[<p>昨天在线下环境遇到一个Oracle的bug。现象为MRP进程中断，导致无法恢复恢复归档。<br/>
+  <meta name="description" content="昨天在线下环境遇到一个Oracle的bug。现象为MRP进程中断，导致无法恢复恢复归档。
+重新恢复应用归档，导致600错误，MRP进程中断 1
+recover managed standby database using current logfile disconnect; 日志如下： 1
+2 &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://RookieDBA.github.io/blog/2014/08/22/oracle-11-dot-2-0-dot-1-active-dataguard-bug">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="RookieDBA" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">RookieDBA</a></h1>
+  
+    <h2>RookieDBA的学习基地</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:RookieDBA.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">首页</a></li>
+  <li><a href="/blog/oracle">Oracle</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Oracle 11.2.0.1 Active DataGuard的一个Bug</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-08-22T00:13:49+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>22</span><span class='date-suffix'>nd</span>, <span class='date-year'>2014</span></span> <span class='time'>12:13 am</span></time>
+        
+           | <a href="#disqus_thread"
+             data-disqus-identifier="http://RookieDBA.github.io">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>昨天在线下环境遇到一个Oracle的bug。现象为MRP进程中断，导致无法恢复恢复归档。<br/>
 重新恢复应用归档，导致600错误，MRP进程中断</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 </pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">recover</span> <span class="n">managed</span> <span class="n">standby</span> <span class="k">database</span> <span class="k">using</span> <span class="k">current</span> <span class="n">logfile</span> <span class="k">disconnect</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 
 <p>日志如下：</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -90,13 +163,13 @@
 </span><span class='line'><span class="n">Errors</span> <span class="k">in</span> <span class="n">file</span> <span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">oracle</span><span class="o">/</span><span class="n">mysid</span><span class="o">/</span><span class="n">diag</span><span class="o">/</span><span class="n">rdbms</span><span class="o">/</span><span class="n">mysid</span><span class="o">/</span><span class="n">mysid</span><span class="o">/</span><span class="n">trace</span><span class="o">/</span><span class="n">mysid_mrp0_8084</span><span class="p">.</span><span class="n">trc</span><span class="p">:</span>
 </span><span class='line'><span class="n">ORA</span><span class="o">-</span><span class="mi">00600</span><span class="p">:</span> <span class="n">internal</span> <span class="n">error</span> <span class="n">code</span><span class="p">,</span> <span class="n">arguments</span><span class="p">:</span> <span class="p">[</span><span class="n">kcbr_apply_change_11</span><span class="p">],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
 </span><span class='line'><span class="n">MRP0</span><span class="p">:</span> <span class="n">Background</span> <span class="n">Media</span> <span class="n">Recovery</span> <span class="n">process</span> <span class="n">shutdown</span> <span class="p">(</span><span class="n">mysid</span><span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 
 <p>
 根据关键字<code>kcbr_apply_change_11</code>查找<code>metalink</code>，发现这是一个Oracle的bug。</p>
 
-<figure class='code'><figcaption><span>Bug 10419984 – Active data guard standby gets ORA-600 [kcbr_apply_change_11] [ID 10419984.8]</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>Bug 10419984 – Active data guard standby gets ORA-600 [kcbr_apply_change_11] [ID 10419984.8]</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -152,74 +225,116 @@
 </span><span class='line'>shutdown the ADG standby, then mount it, and do media recovery until it has recovered
 </span><span class='line'>past all the redo generated during the hot backup taken on the primary. Then stop media
 </span><span class='line'>recovery, and open the database read only, and restart media recovery again.
-</span></code></pre></td></tr></table></div></figure>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 
 <p></p>
 
 <p>根据<code>metalink</code>上的描述，将ADG的物理备库shutdown，然后startup到mount状态，恢复之前的归档之后，open database，再恢复就OK了。</p>
-]]></content>
-  </entry>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
   
-  <entry>
-    <title type="html"><![CDATA[Expdp/impdp]]></title>
-    <link href="http://RookieDBA.github.io/blog/2014/08/21/expdp-slash-impdp/"/>
-    <updated>2014-08-21T22:29:20+08:00</updated>
-    <id>http://RookieDBA.github.io/blog/2014/08/21/expdp-slash-impdp</id>
-    <content type="html"><![CDATA[<p>今天用expdp和impdp做数据迁移，针对整个schema的数据导入导出，也很有幸体验到了exp和expdp在速度上的差别，因为exp要过一层buffer，所以速度上慢特别多，一个67G数据的schema，用expdp大概花了半个小时，而exp半个小时大概生成3G左右的数据，速度上还是相差很大的。</p>
 
-<hr />
+<span class="byline author vcard">Posted by <span class="fn">RookieDBA</span></span>
 
-<h1>EXPDP</h1>
-
-<p>用expdp之前要在oracle中创建一个directory。</p>
-
-<figure class='code'><figcaption><span>directory</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">conn</span> <span class="o">/</span> <span class="k">as</span> <span class="n">sysdba</span>
-</span><span class='line'><span class="k">create</span> <span class="k">or</span> <span class="k">replace</span> <span class="n">directory</span> <span class="n">dir_name</span> <span class="k">as</span> <span class="err">‘</span><span class="o">/</span><span class="n">path</span><span class="err">’</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
+      
 
 
-<p>然后到os中，用expdp命令导出数据</p>
-
-<figure class='code'><figcaption><span>expdp</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">expdp</span> <span class="k">system</span><span class="o">/</span><span class="n">password</span> <span class="n">schemas</span><span class="o">=</span><span class="k">schema_name</span> <span class="n">directory</span><span class="o">=</span><span class="n">dump</span> <span class="n">dumpfile</span><span class="o">=</span><span class="n">out_file_name</span><span class="p">.</span><span class="n">dmp</span> <span class="n">logfile</span><span class="o">=</span><span class="n">log_file_name</span><span class="p">.</span><span class="n">log</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
 
 
-<p>则会在dump目录下生成dmp文件和log文件，这里的directory就是之前在Oracle中创建的directory。</p>
-
-<hr />
-
-<h1>IMPDP</h1>
-
-<p>用impdp来导入数据和前面一样，dmp文件就是之前expdp出来的dmp文件。</p>
-
-<figure class='code'><figcaption><span>impdp</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">impdp</span> <span class="k">system</span><span class="o">/</span><span class="n">password</span> <span class="n">schemas</span><span class="o">=</span><span class="k">schema_name</span> <span class="n">directory</span><span class="o">=</span><span class="n">dump</span> <span class="n">dumpfile</span><span class="o">=</span><span class="n">imp_file</span><span class="p">.</span><span class="n">dmp</span> <span class="n">logfile</span><span class="o">=</span><span class="n">log_imp</span><span class="p">.</span><span class="n">log</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
+<time class='entry-date' datetime='2014-08-22T00:13:49+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>22</span><span class='date-suffix'>nd</span>, <span class='date-year'>2014</span></span> <span class='time'>12:13 am</span></time>
+      
 
 
-<p>impdp似乎可以直接和expdp连接使用，就可以边导出边导入了，有待研究。</p>
-
-<hr />
-
-<h1>关于NETWORK_LINK参数</h1>
-
-<p>如果有指定NETWORK_LINK参数，则可以远程传输至目标端，network_link的值为dblink的名字。<br/>
-首先，在目标端库建立一个dblink至源端。<br/>
-expdp指定network_link参数将可以直接在目标端生成dump文件。<br/>
-impdp指定network_link参数，可以直接绕过生成dump文件，直接从源端导出并导入目标端。<br/>
-相应的EXP和IMP就简单一点（buffer设大一点快，exp不小于64000，imp不小于100000）</p>
-
-<figure class='code'><figcaption><span>exp/imp</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">exp</span> <span class="k">schema_name</span><span class="o">/</span><span class="n">password</span>  <span class="n">BUFFER</span><span class="o">=</span><span class="mi">1000000000</span> <span class="n">FILE</span><span class="o">=/</span><span class="k">data</span><span class="o">/</span><span class="n">oradata</span><span class="o">/</span><span class="n">dump</span><span class="o">/</span><span class="n">out_file_name</span><span class="p">.</span><span class="n">dmp</span> <span class="k">OWNER</span><span class="o">=</span><span class="k">schema_name</span> <span class="n">log</span><span class="o">=</span><span class="n">logfile</span><span class="p">.</span><span class="n">log</span>
-</span><span class='line'><span class="n">imp</span> <span class="k">schema_name</span><span class="o">/</span><span class="n">password</span>  <span class="n">BUFFER</span><span class="o">=</span><span class="mi">1000000000</span> <span class="n">FILE</span><span class="o">=/</span><span class="k">data</span><span class="o">/</span><span class="n">oradata</span><span class="o">/</span><span class="n">dump</span><span class="o">/</span><span class="n">imp_file_name</span><span class="p">.</span><span class="n">dmp</span>  <span class="n">FROMUSER</span><span class="o">=</span><span class="n">from_schema</span> <span class="n">TOUSER</span><span class="o">=</span><span class="k">schema_name</span> <span class="n">log</span><span class="o">=</span><span class="n">logfile</span><span class="p">.</span><span class="n">log</span>
-</span></code></pre></td></tr></table></div></figure>
-
-]]></content>
-  </entry>
+    </p>
+    
+      <div class="sharing">
   
-</feed>
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2014/08/21/expdp-slash-impdp/" title="Previous Post: expdp/impdp">&laquo; expdp/impdp</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+    <h1>新浪微博</h1>
+    <ul id="weibo">
+    <li>
+    <iframe width="100%" height="550" class="share_self"  frameborder="0" scrolling="no" src="http://widget.weibo.com/weiboshow/index.php?language=&width=0&height=550&fansRow=1&ptype=1&speed=0&skin=9&isTitle=1&noborder=1&isWeibo=0&isFans=0&uid=1992125701&verifier=996dff3a&dpc=1"></iframe>
+    </li>
+    </ul>
+</section>
+<section>
+  <h1>近期文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/08/22/oracle-11-dot-2-0-dot-1-active-dataguard-bug/">Oracle 11.2.0.1 Active DataGuard的一个Bug</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/08/21/expdp-slash-impdp/">Expdp/impdp</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2014 - RookieDBA -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'RookieDBA';
+      
+        
+        var disqus_script = 'count.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
