@@ -44,6 +44,8 @@ Errors in file /opt/oracle/mysid/diag/rdbms/mysid/mysid/trace/mysid_mrp0_8084.tr
 ORA-00600: internal error code, arguments: [kcbr_apply_change_11], [], [], [], [], [], [], [], [], [], [], []
 MRP0: Background Media Recovery process shutdown (mysid)
 ```  
+<!--more-->
+
 根据关键字```kcbr_apply_change_11```查找```metalink```，发现这是一个Oracle的bug。  
 
 ``` text Bug 10419984 – Active data guard standby gets ORA-600 [kcbr_apply_change_11] [ID 10419984.8]

@@ -31,6 +31,7 @@ impdp system/password schemas=schema_name directory=dump dumpfile=imp_file.dmp l
 impdp似乎可以直接和expdp连接使用，就可以边导出边导入了，有待研究。
 
 ---
+<!--more-->
 
 #关于NETWORK_LINK参数
 如果有指定NETWORK_LINK参数，则可以远程传输至目标端，network_link的值为dblink的名字。  

@@ -45,6 +45,8 @@ NAME                                                         STATUS
 
 85 rows selected.
 ```  
+<!--more-->
+
 处理的方式为：  
 1、备库重新创建数据文件
 
