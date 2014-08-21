@@ -4,7 +4,7 @@
   <title><![CDATA[RookieDBA]]></title>
   <link href="http://RookieDBA.github.io/atom.xml" rel="self"/>
   <link href="http://RookieDBA.github.io/"/>
-  <updated>2014-08-22T00:18:54+08:00</updated>
+  <updated>2014-08-22T00:30:13+08:00</updated>
   <id>http://RookieDBA.github.io/</id>
   <author>
     <name><![CDATA[RookieDBA]]></name>
@@ -12,6 +12,120 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[备库创建datafile失败，MRP进程crash的处理]]></title>
+    <link href="http://RookieDBA.github.io/blog/2014/08/22/standby-datafile-mrp-crash/"/>
+    <updated>2014-08-22T00:23:08+08:00</updated>
+    <id>http://RookieDBA.github.io/blog/2014/08/22/standby-datafile-mrp-crash</id>
+    <content type="html"><![CDATA[<p>今天遇到一个问题，主库加数据文件后备库不久MRP进程crash。</p>
+
+<p>看<code>alter</code>日志，发现如下错误：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='text'><span class='line'>File #85 added to control file as &#39;UNNAMED00085&#39; because
+</span><span class='line'>the parameter STANDBY_FILE_MANAGEMENT is set to MANUAL
+</span><span class='line'>The file should be manually created to continue.
+</span><span class='line'>Errors with log /data/arch/paycore2/paycore2_1_50043_794444625.arc
+</span><span class='line'>MRP0: Background Media Recovery terminated with error 1274
+</span><span class='line'>Errors in file /opt/oracle/paycore2/diag/rdbms/paycore2/paycore2/trace/paycore2_pr00_16671.trc:
+</span><span class='line'>ORA-01274: cannot add datafile &#39;/data/oradata/paycore2/ESCROW_DATA_040.dbf&#39; - file could not be created
+</span><span class='line'>Recovery interrupted!
+</span><span class='line'>从alter日志上看，是备库的STANDBY_FILE_MANAGEMENT参数设置成了manual，所以主库创建数据文件备库不能自动添加。
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>
+从DB上看</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class='text'><span class='line'>SQL&gt;select name,status from v$datafile order by 1;
+</span><span class='line'>
+</span><span class='line'>NAME                                                         STATUS
+</span><span class='line'>----------------------------------------------------------- -------
+</span><span class='line'>/data/oradata/paycore2/APPDATA1M_000.dbf                     ONLINE
+</span><span class='line'>/data/oradata/paycore2/APPDATA1M_001.dbf                     ONLINE
+</span><span class='line'>/data/oradata/paycore2/APPINDX1M_000.dbf                     ONLINE
+</span><span class='line'>/data/oradata/paycore2/APPINDX1M_001.dbf                     ONLINE
+</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_000.dbf                   ONLINE
+</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_001.dbf                   ONLINE
+</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_002.dbf                   ONLINE
+</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_003.dbf                   ONLINE
+</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_004.dbf                   ONLINE
+</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_005.dbf                   ONLINE
+</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_006.dbf                   ONLINE
+</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_007.dbf                   ONLINE
+</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_008.dbf                   ONLINE
+</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_009.dbf                   ONLINE
+</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_010.dbf                   ONLINE
+</span><span class='line'>...
+</span><span class='line'>/opt/oracle/paycore2/products/11.2.0/dbs/UNNAMED00085        RECOVER
+</span><span class='line'>
+</span><span class='line'>85 rows selected.
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>
+处理的方式为：<br/>
+1、备库重新创建数据文件</p>
+
+<figure class='code'><figcaption><span>1、备库重新创建数据文件</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">SQL</span><span class="o">&gt;</span><span class="k">alter</span> <span class="k">database</span> <span class="k">create</span> <span class="n">datafile</span> <span class="s1">&#39;/opt/oracle/paycore2/products/11.2.0/dbs/UNNAMED00085&#39;</span> <span class="k">as</span> <span class="s1">&#39;/data/oradata/paycore2/ESCROW_DATA_040.dbf&#39;</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p> <br/>
+2、设置STANDBY_FILE_MANAGEMENT参数为auto</p>
+
+<figure class='code'><figcaption><span>2、设置STANDBY_FILE_MANAGEMENT参数为auto</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">SQL</span><span class="o">&gt;</span><span class="k">alter</span> <span class="k">system</span> <span class="k">set</span> <span class="n">STANDBY_FILE_MANAGEMENT</span><span class="o">=</span><span class="n">auto</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>
+3、将备库恢复打开</p>
+
+<figure class='code'><figcaption><span>3、将备库恢复打开</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">SQL</span><span class="o">&gt;</span><span class="k">alter</span> <span class="k">database</span> <span class="n">recover</span> <span class="n">managed</span> <span class="n">standby</span> <span class="k">database</span> <span class="k">disconnect</span> <span class="k">from</span> <span class="k">session</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这么处理以后，后续的文件都陆续创建上来，不过唯独这个文件的status是recover状态，recover datafile 85;无效，后续再看看是什么原因，跟进一下。</p>
+
+<p>–跟进
+最后那个问题，是因为database的状态为<code>open</code>，只需将状态打到<code>mount</code>，再恢复就OK了</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Oracle 11.2.0.1 Active DataGuard的一个Bug]]></title>

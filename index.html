@@ -9,10 +9,17 @@
   <meta name="author" content="RookieDBA">
 
   
-  <meta name="description" content="昨天在线下环境遇到一个Oracle的bug。现象为MRP进程中断，导致无法恢复恢复归档。
-重新恢复应用归档，导致600错误，MRP进程中断 1
-recover managed standby database using current logfile disconnect; 日志如下： 1
-2 &hellip;">
+  <meta name="description" content="今天遇到一个问题，主库加数据文件后备库不久MRP进程crash。 看alter日志，发现如下错误： 1
+2
+3
+4
+5
+6
+7
+8
+9
+File #85 added to control file as &#39;UNNAMED00085&#39; because
+the parameter &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -69,6 +76,143 @@ recover managed standby database using current logfile disconnect; 日志如下�
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/08/22/standby-datafile-mrp-crash/">备库创建datafile失败，MRP进程crash的处理</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-08-22T00:23:08+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>22</span><span class='date-suffix'>nd</span>, <span class='date-year'>2014</span></span> <span class='time'>12:23 am</span></time>
+        
+           | <a href="/blog/2014/08/22/standby-datafile-mrp-crash/#disqus_thread"
+             data-disqus-identifier="http://RookieDBA.github.io/blog/2014/08/22/standby-datafile-mrp-crash/">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>今天遇到一个问题，主库加数据文件后备库不久MRP进程crash。</p>
+
+<p>看<code>alter</code>日志，发现如下错误：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='text'><span class='line'>File #85 added to control file as &#39;UNNAMED00085&#39; because
+</span><span class='line'>the parameter STANDBY_FILE_MANAGEMENT is set to MANUAL
+</span><span class='line'>The file should be manually created to continue.
+</span><span class='line'>Errors with log /data/arch/paycore2/paycore2_1_50043_794444625.arc
+</span><span class='line'>MRP0: Background Media Recovery terminated with error 1274
+</span><span class='line'>Errors in file /opt/oracle/paycore2/diag/rdbms/paycore2/paycore2/trace/paycore2_pr00_16671.trc:
+</span><span class='line'>ORA-01274: cannot add datafile &#39;/data/oradata/paycore2/ESCROW_DATA_040.dbf&#39; - file could not be created
+</span><span class='line'>Recovery interrupted!
+</span><span class='line'>从alter日志上看，是备库的STANDBY_FILE_MANAGEMENT参数设置成了manual，所以主库创建数据文件备库不能自动添加。
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>
+从DB上看</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class='text'><span class='line'>SQL&gt;select name,status from v$datafile order by 1;
+</span><span class='line'>
+</span><span class='line'>NAME                                                         STATUS
+</span><span class='line'>----------------------------------------------------------- -------
+</span><span class='line'>/data/oradata/paycore2/APPDATA1M_000.dbf                     ONLINE
+</span><span class='line'>/data/oradata/paycore2/APPDATA1M_001.dbf                     ONLINE
+</span><span class='line'>/data/oradata/paycore2/APPINDX1M_000.dbf                     ONLINE
+</span><span class='line'>/data/oradata/paycore2/APPINDX1M_001.dbf                     ONLINE
+</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_000.dbf                   ONLINE
+</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_001.dbf                   ONLINE
+</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_002.dbf                   ONLINE
+</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_003.dbf                   ONLINE
+</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_004.dbf                   ONLINE
+</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_005.dbf                   ONLINE
+</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_006.dbf                   ONLINE
+</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_007.dbf                   ONLINE
+</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_008.dbf                   ONLINE
+</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_009.dbf                   ONLINE
+</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_010.dbf                   ONLINE
+</span><span class='line'>...
+</span><span class='line'>/opt/oracle/paycore2/products/11.2.0/dbs/UNNAMED00085        RECOVER
+</span><span class='line'>
+</span><span class='line'>85 rows selected.
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>
+处理的方式为：<br/>
+1、备库重新创建数据文件</p>
+
+<figure class='code'><figcaption><span>1、备库重新创建数据文件</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">SQL</span><span class="o">&gt;</span><span class="k">alter</span> <span class="k">database</span> <span class="k">create</span> <span class="n">datafile</span> <span class="s1">&#39;/opt/oracle/paycore2/products/11.2.0/dbs/UNNAMED00085&#39;</span> <span class="k">as</span> <span class="s1">&#39;/data/oradata/paycore2/ESCROW_DATA_040.dbf&#39;</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p> <br/>
+2、设置STANDBY_FILE_MANAGEMENT参数为auto</p>
+
+<figure class='code'><figcaption><span>2、设置STANDBY_FILE_MANAGEMENT参数为auto</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">SQL</span><span class="o">&gt;</span><span class="k">alter</span> <span class="k">system</span> <span class="k">set</span> <span class="n">STANDBY_FILE_MANAGEMENT</span><span class="o">=</span><span class="n">auto</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>
+3、将备库恢复打开</p>
+
+<figure class='code'><figcaption><span>3、将备库恢复打开</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">SQL</span><span class="o">&gt;</span><span class="k">alter</span> <span class="k">database</span> <span class="n">recover</span> <span class="n">managed</span> <span class="n">standby</span> <span class="k">database</span> <span class="k">disconnect</span> <span class="k">from</span> <span class="k">session</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这么处理以后，后续的文件都陆续创建上来，不过唯独这个文件的status是recover状态，recover datafile 85;无效，后续再看看是什么原因，跟进一下。</p>
+
+<p>–跟进
+最后那个问题，是因为database的状态为<code>open</code>，只需将状态打到<code>mount</code>，再恢复就OK了</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -344,6 +488,10 @@ impdp指定network_link参数，可以直接绕过生成dump文件，直接从�
 <section>
   <h1>近期文章</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/08/22/standby-datafile-mrp-crash/">备库创建datafile失败，MRP进程crash的处理</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2014/08/22/oracle-11-dot-2-0-dot-1-active-dataguard-bug/">Oracle 11.2.0.1 Active DataGuard的一个Bug</a>
