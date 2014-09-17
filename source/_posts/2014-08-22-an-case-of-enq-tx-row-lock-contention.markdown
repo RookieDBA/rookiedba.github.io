@@ -7,7 +7,7 @@ categories:
 ---
 年前，一个系统发布，刚上线就导致了大量的enq。之前一直没写下来，今天静下心记录一下。  
 
-业务上对某张表T进行insert操作，并且伴随着并发。T表中的HID字段因为业务需求有唯一性约束，所以这个字段上有唯一性约束并且有唯一索引。而HID的值需要通过一次额WS调用才能取得，为了提高系统吞吐量，减少响应时间，这里采取异步化的方式。然而业务设计上insert时先给HID字段初始0值，然后再update。由于有唯一性索引的关系，加上并发，导致大量session等待这个行级锁。  
+业务上对某张表T进行insert操作，并且伴随着并发。T表中的XXX字段因为业务需求有唯一性约束，所以这个字段上有唯一性约束并且有唯一索引。而XXX的值需要通过一次额WS调用才能取得，为了提高系统吞吐量，减少响应时间，这里采取异步化的方式。然而业务设计上insert时先给HID字段初始0值，然后再update。由于有唯一性索引的关系，加上并发，导致大量session等待这个行级锁。  
   
 我们知道Oracle的索引会根据索引列的值进行排序，而对于唯一性索引来说，每个值在索引上只有一个位置可以写，所以大量的session等到0这个值的索引块的锁释放。  
 
@@ -15,12 +15,12 @@ categories:
 
 1、建一张表T，字段HID建唯一性索引，并insert值为0的记录  
 ``` sql 1、建一张表T，字段HID建唯一性索引，并insert值为0的记录
-yuqing@TOOLDB>set sqlp 'SESSION A>'
-SESSION A>create table t(hid number(16));
+yuqing>set sqlp 'SESSION A>'
+SESSION A>create table t(xxx number(16));
  
 Table created.
  
-SESSION A>create unique index t_hid_ind on t(hid) tablespace zhifb_data;
+SESSION A>create unique index t_hid_ind on t(xxx) tablespace xxxxxxxx;
  
 Index created.
  
@@ -32,19 +32,19 @@ SESSION A>insert into t values(0);
   
 2、然后在session B，也执行同样的insert  
 ``` sql 2、然后在session B，也执行同样的insert  
-yuqing@TOOLDB>set sqlp 'SESSION B>'
+yuqing>set sqlp 'SESSION B>'
 SESSION B>insert into t values(0);
 ```  
 这时候发现，session B hang住了，它在等待session A的事务提交或者回滚  
 ``` sql
-sys@TOOLDB>select USERNAME,EVENT,SQL_ID from v$session where username='YUQING';
+sys>select USERNAME,EVENT,SQL_ID from v$session where username='YUQING';
  
 USERNAME   EVENT                                    SQL_ID
 ---------- ---------------------------------------- -------------
 YUQING     SQL*Net message from client
 YUQING     enq: TX - row lock contention            70nctf7574d1y
 
-sys@TOOLDB>select sql_id,sql_text from v$sql where sql_id='70nctf7574d1y';
+sys>select sql_id,sql_text from v$sql where sql_id='70nctf7574d1y';
  
 SQL_ID        SQL_TEXT
 ------------- ----------------------------

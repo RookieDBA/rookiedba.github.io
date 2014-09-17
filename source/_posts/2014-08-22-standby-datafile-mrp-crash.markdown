@@ -12,10 +12,10 @@ categories:
 File #85 added to control file as 'UNNAMED00085' because
 the parameter STANDBY_FILE_MANAGEMENT is set to MANUAL
 The file should be manually created to continue.
-Errors with log /data/arch/paycore2/paycore2_1_50043_794444625.arc
+Errors with log /data/arch/xxxx/xxxx_1_50043_794444625.arc
 MRP0: Background Media Recovery terminated with error 1274
-Errors in file /opt/oracle/paycore2/diag/rdbms/paycore2/paycore2/trace/paycore2_pr00_16671.trc:
-ORA-01274: cannot add datafile '/data/oradata/paycore2/ESCROW_DATA_040.dbf' - file could not be created
+Errors in file /opt/oracle/xxxx/diag/rdbms/xxxx/xxxx/trace/xxxx_pr00_16671.trc:
+ORA-01274: cannot add datafile '/data/oradata/xxxx/XXXX_DATA_040.dbf' - file could not be created
 Recovery interrupted!
 从alter日志上看，是备库的STANDBY_FILE_MANAGEMENT参数设置成了manual，所以主库创建数据文件备库不能自动添加。
 ```  
@@ -25,23 +25,23 @@ SQL>select name,status from v$datafile order by 1;
 
 NAME                                                         STATUS
 ----------------------------------------------------------- -------
-/data/oradata/paycore2/APPDATA1M_000.dbf                     ONLINE
-/data/oradata/paycore2/APPDATA1M_001.dbf                     ONLINE
-/data/oradata/paycore2/APPINDX1M_000.dbf                     ONLINE
-/data/oradata/paycore2/APPINDX1M_001.dbf                     ONLINE
-/data/oradata/paycore2/ESCROW_DATA_000.dbf                   ONLINE
-/data/oradata/paycore2/ESCROW_DATA_001.dbf                   ONLINE
-/data/oradata/paycore2/ESCROW_DATA_002.dbf                   ONLINE
-/data/oradata/paycore2/ESCROW_DATA_003.dbf                   ONLINE
-/data/oradata/paycore2/ESCROW_DATA_004.dbf                   ONLINE
-/data/oradata/paycore2/ESCROW_DATA_005.dbf                   ONLINE
-/data/oradata/paycore2/ESCROW_DATA_006.dbf                   ONLINE
-/data/oradata/paycore2/ESCROW_DATA_007.dbf                   ONLINE
-/data/oradata/paycore2/ESCROW_DATA_008.dbf                   ONLINE
-/data/oradata/paycore2/ESCROW_DATA_009.dbf                   ONLINE
-/data/oradata/paycore2/ESCROW_DATA_010.dbf                   ONLINE
+/data/oradata/xxxx/xxxx_A1M_000.dbf                         ONLINE
+/data/oradata/xxxx/xxxx_A1M_001.dbf                         ONLINE
+/data/oradata/xxxx/xxxx_1M_000.dbf                          ONLINE
+/data/oradata/xxxx/xxxx_1M_001.dbf                          ONLINE
+/data/oradata/xxxx/xxxx_DATA_000.dbf                        ONLINE
+/data/oradata/xxxx/xxxx_DATA_001.dbf                        ONLINE
+/data/oradata/xxxx/xxxx_DATA_002.dbf                        ONLINE
+/data/oradata/xxxx/xxxx_DATA_003.dbf                        ONLINE
+/data/oradata/xxxx/xxxx_DATA_004.dbf                        ONLINE
+/data/oradata/xxxx/xxxx_DATA_005.dbf                        ONLINE
+/data/oradata/xxxx/xxxx_DATA_006.dbf                        ONLINE
+/data/oradata/xxxx/xxxx_DATA_007.dbf                        ONLINE
+/data/oradata/xxxx/xxxx_DATA_008.dbf                        ONLINE
+/data/oradata/xxxx/xxxx_DATA_009.dbf                        ONLINE
+/data/oradata/xxxx/xxxx_DATA_010.dbf                        ONLINE
 ...
-/opt/oracle/paycore2/products/11.2.0/dbs/UNNAMED00085        RECOVER 
+/opt/oracle/xxxx/products/11.2.0/dbs/UNNAMED00085        RECOVER 
 
 85 rows selected.
 ```  
@@ -51,7 +51,7 @@ NAME                                                         STATUS
 1、备库重新创建数据文件
 
 ``` sql 1、备库重新创建数据文件
-SQL>alter database create datafile '/opt/oracle/paycore2/products/11.2.0/dbs/UNNAMED00085' as '/data/oradata/paycore2/ESCROW_DATA_040.dbf';
+SQL>alter database create datafile '/opt/oracle/xxxx/products/11.2.0/dbs/UNNAMED00085' as '/data/oradata/xxxx/xxxx_DATA_040.dbf';
 ```   
 2、设置STANDBY_FILE_MANAGEMENT参数为auto  
 ```sql 2、设置STANDBY_FILE_MANAGEMENT参数为auto
