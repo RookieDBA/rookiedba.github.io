@@ -114,10 +114,10 @@ the parameter &hellip;">
 </pre></td><td class='code'><pre><code class='text'><span class='line'>File #85 added to control file as &#39;UNNAMED00085&#39; because
 </span><span class='line'>the parameter STANDBY_FILE_MANAGEMENT is set to MANUAL
 </span><span class='line'>The file should be manually created to continue.
-</span><span class='line'>Errors with log /data/arch/paycore2/paycore2_1_50043_794444625.arc
+</span><span class='line'>Errors with log /data/arch/xxxx/xxxx_1_50043_794444625.arc
 </span><span class='line'>MRP0: Background Media Recovery terminated with error 1274
-</span><span class='line'>Errors in file /opt/oracle/paycore2/diag/rdbms/paycore2/paycore2/trace/paycore2_pr00_16671.trc:
-</span><span class='line'>ORA-01274: cannot add datafile &#39;/data/oradata/paycore2/ESCROW_DATA_040.dbf&#39; - file could not be created
+</span><span class='line'>Errors in file /opt/oracle/xxxx/diag/rdbms/xxxx/xxxx/trace/xxxx_pr00_16671.trc:
+</span><span class='line'>ORA-01274: cannot add datafile &#39;/data/oradata/xxxx/XXXX_DATA_040.dbf&#39; - file could not be created
 </span><span class='line'>Recovery interrupted!
 </span><span class='line'>从alter日志上看，是备库的STANDBY_FILE_MANAGEMENT参数设置成了manual，所以主库创建数据文件备库不能自动添加。
 </span></code></pre></td></tr></table></div></figure></notextile></div>
@@ -153,23 +153,23 @@ the parameter &hellip;">
 </span><span class='line'>
 </span><span class='line'>NAME                                                         STATUS
 </span><span class='line'>----------------------------------------------------------- -------
-</span><span class='line'>/data/oradata/paycore2/APPDATA1M_000.dbf                     ONLINE
-</span><span class='line'>/data/oradata/paycore2/APPDATA1M_001.dbf                     ONLINE
-</span><span class='line'>/data/oradata/paycore2/APPINDX1M_000.dbf                     ONLINE
-</span><span class='line'>/data/oradata/paycore2/APPINDX1M_001.dbf                     ONLINE
-</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_000.dbf                   ONLINE
-</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_001.dbf                   ONLINE
-</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_002.dbf                   ONLINE
-</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_003.dbf                   ONLINE
-</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_004.dbf                   ONLINE
-</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_005.dbf                   ONLINE
-</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_006.dbf                   ONLINE
-</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_007.dbf                   ONLINE
-</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_008.dbf                   ONLINE
-</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_009.dbf                   ONLINE
-</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_010.dbf                   ONLINE
+</span><span class='line'>/data/oradata/xxxx/xxxx_A1M_000.dbf                         ONLINE
+</span><span class='line'>/data/oradata/xxxx/xxxx_A1M_001.dbf                         ONLINE
+</span><span class='line'>/data/oradata/xxxx/xxxx_1M_000.dbf                          ONLINE
+</span><span class='line'>/data/oradata/xxxx/xxxx_1M_001.dbf                          ONLINE
+</span><span class='line'>/data/oradata/xxxx/xxxx_DATA_000.dbf                        ONLINE
+</span><span class='line'>/data/oradata/xxxx/xxxx_DATA_001.dbf                        ONLINE
+</span><span class='line'>/data/oradata/xxxx/xxxx_DATA_002.dbf                        ONLINE
+</span><span class='line'>/data/oradata/xxxx/xxxx_DATA_003.dbf                        ONLINE
+</span><span class='line'>/data/oradata/xxxx/xxxx_DATA_004.dbf                        ONLINE
+</span><span class='line'>/data/oradata/xxxx/xxxx_DATA_005.dbf                        ONLINE
+</span><span class='line'>/data/oradata/xxxx/xxxx_DATA_006.dbf                        ONLINE
+</span><span class='line'>/data/oradata/xxxx/xxxx_DATA_007.dbf                        ONLINE
+</span><span class='line'>/data/oradata/xxxx/xxxx_DATA_008.dbf                        ONLINE
+</span><span class='line'>/data/oradata/xxxx/xxxx_DATA_009.dbf                        ONLINE
+</span><span class='line'>/data/oradata/xxxx/xxxx_DATA_010.dbf                        ONLINE
 </span><span class='line'>...
-</span><span class='line'>/opt/oracle/paycore2/products/11.2.0/dbs/UNNAMED00085        RECOVER
+</span><span class='line'>/opt/oracle/xxxx/products/11.2.0/dbs/UNNAMED00085        RECOVER
 </span><span class='line'>
 </span><span class='line'>85 rows selected.
 </span></code></pre></td></tr></table></div></figure></notextile></div>
@@ -184,7 +184,7 @@ the parameter &hellip;">
 1、备库重新创建数据文件</p>
 
 <div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>1、备库重新创建数据文件</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">SQL</span><span class="o">&gt;</span><span class="k">alter</span> <span class="k">database</span> <span class="k">create</span> <span class="n">datafile</span> <span class="s1">&#39;/opt/oracle/paycore2/products/11.2.0/dbs/UNNAMED00085&#39;</span> <span class="k">as</span> <span class="s1">&#39;/data/oradata/paycore2/ESCROW_DATA_040.dbf&#39;</span><span class="p">;</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">SQL</span><span class="o">&gt;</span><span class="k">alter</span> <span class="k">database</span> <span class="k">create</span> <span class="n">datafile</span> <span class="s1">&#39;/opt/oracle/xxxx/products/11.2.0/dbs/UNNAMED00085&#39;</span> <span class="k">as</span> <span class="s1">&#39;/data/oradata/xxxx/xxxx_DATA_040.dbf&#39;</span><span class="p">;</span>
 </span></code></pre></td></tr></table></div></figure></notextile></div>
 
 

@@ -9,7 +9,7 @@
   <meta name="author" content="RookieDBA">
 
   
-  <meta name="description" content="年前，一个系统发布，刚上线就导致了大量的enq。之前一直没写下来，今天静下心记录一下。 业务上对某张表T进行insert操作，并且伴随着并发。T表中的HID字段因为业务需求有唯一性约束，所以这个字段上有唯一性约束并且有唯一索引。而HID的值需要通过一次额WS调用才能取得，为了提高系统吞吐量， &hellip;">
+  <meta name="description" content="年前，一个系统发布，刚上线就导致了大量的enq。之前一直没写下来，今天静下心记录一下。 业务上对某张表T进行insert操作，并且伴随着并发。T表中的XXX字段因为业务需求有唯一性约束，所以这个字段上有唯一性约束并且有唯一索引。而XXX的值需要通过一次额WS调用才能取得，为了提高系统吞吐量， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -90,7 +90,7 @@
 
 <div class="entry-content"><p>年前，一个系统发布，刚上线就导致了大量的enq。之前一直没写下来，今天静下心记录一下。</p>
 
-<p>业务上对某张表T进行insert操作，并且伴随着并发。T表中的HID字段因为业务需求有唯一性约束，所以这个字段上有唯一性约束并且有唯一索引。而HID的值需要通过一次额WS调用才能取得，为了提高系统吞吐量，减少响应时间，这里采取异步化的方式。然而业务设计上insert时先给HID字段初始0值，然后再update。由于有唯一性索引的关系，加上并发，导致大量session等待这个行级锁。</p>
+<p>业务上对某张表T进行insert操作，并且伴随着并发。T表中的XXX字段因为业务需求有唯一性约束，所以这个字段上有唯一性约束并且有唯一索引。而XXX的值需要通过一次额WS调用才能取得，为了提高系统吞吐量，减少响应时间，这里采取异步化的方式。然而业务设计上insert时先给HID字段初始0值，然后再update。由于有唯一性索引的关系，加上并发，导致大量session等待这个行级锁。</p>
 
 <p>我们知道Oracle的索引会根据索引列的值进行排序，而对于唯一性索引来说，每个值在索引上只有一个位置可以写，所以大量的session等到0这个值的索引块的锁释放。</p>
 
@@ -110,12 +110,12 @@
 <span class='line-number'>10</span>
 <span class='line-number'>11</span>
 <span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">yuqing</span><span class="o">@</span><span class="n">TOOLDB</span><span class="o">&gt;</span><span class="k">set</span> <span class="n">sqlp</span> <span class="s1">&#39;SESSION A&gt;&#39;</span>
-</span><span class='line'><span class="k">SESSION</span> <span class="n">A</span><span class="o">&gt;</span><span class="k">create</span> <span class="k">table</span> <span class="n">t</span><span class="p">(</span><span class="n">hid</span> <span class="nb">number</span><span class="p">(</span><span class="mi">16</span><span class="p">));</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">yuqing</span><span class="o">&gt;</span><span class="k">set</span> <span class="n">sqlp</span> <span class="s1">&#39;SESSION A&gt;&#39;</span>
+</span><span class='line'><span class="k">SESSION</span> <span class="n">A</span><span class="o">&gt;</span><span class="k">create</span> <span class="k">table</span> <span class="n">t</span><span class="p">(</span><span class="n">xxx</span> <span class="nb">number</span><span class="p">(</span><span class="mi">16</span><span class="p">));</span>
 </span><span class='line'>
 </span><span class='line'><span class="k">Table</span> <span class="n">created</span><span class="p">.</span>
 </span><span class='line'>
-</span><span class='line'><span class="k">SESSION</span> <span class="n">A</span><span class="o">&gt;</span><span class="k">create</span> <span class="k">unique</span> <span class="k">index</span> <span class="n">t_hid_ind</span> <span class="k">on</span> <span class="n">t</span><span class="p">(</span><span class="n">hid</span><span class="p">)</span> <span class="n">tablespace</span> <span class="n">zhifb_data</span><span class="p">;</span>
+</span><span class='line'><span class="k">SESSION</span> <span class="n">A</span><span class="o">&gt;</span><span class="k">create</span> <span class="k">unique</span> <span class="k">index</span> <span class="n">t_hid_ind</span> <span class="k">on</span> <span class="n">t</span><span class="p">(</span><span class="n">xxx</span><span class="p">)</span> <span class="n">tablespace</span> <span class="n">xxxxxxxx</span><span class="p">;</span>
 </span><span class='line'>
 </span><span class='line'><span class="k">Index</span> <span class="n">created</span><span class="p">.</span>
 </span><span class='line'>
@@ -136,7 +136,7 @@
 
 <div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>2、然后在session B，也执行同样的insert  </span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">yuqing</span><span class="o">@</span><span class="n">TOOLDB</span><span class="o">&gt;</span><span class="k">set</span> <span class="n">sqlp</span> <span class="s1">&#39;SESSION B&gt;&#39;</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">yuqing</span><span class="o">&gt;</span><span class="k">set</span> <span class="n">sqlp</span> <span class="s1">&#39;SESSION B&gt;&#39;</span>
 </span><span class='line'><span class="k">SESSION</span> <span class="n">B</span><span class="o">&gt;</span><span class="k">insert</span> <span class="k">into</span> <span class="n">t</span> <span class="k">values</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
 </span></code></pre></td></tr></table></div></figure></notextile></div>
 
@@ -156,14 +156,14 @@
 <span class='line-number'>10</span>
 <span class='line-number'>11</span>
 <span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">sys</span><span class="o">@</span><span class="n">TOOLDB</span><span class="o">&gt;</span><span class="k">select</span> <span class="n">USERNAME</span><span class="p">,</span><span class="n">EVENT</span><span class="p">,</span><span class="n">SQL_ID</span> <span class="k">from</span> <span class="n">v</span><span class="err">$</span><span class="k">session</span> <span class="k">where</span> <span class="n">username</span><span class="o">=</span><span class="s1">&#39;YUQING&#39;</span><span class="p">;</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">sys</span><span class="o">&gt;</span><span class="k">select</span> <span class="n">USERNAME</span><span class="p">,</span><span class="n">EVENT</span><span class="p">,</span><span class="n">SQL_ID</span> <span class="k">from</span> <span class="n">v</span><span class="err">$</span><span class="k">session</span> <span class="k">where</span> <span class="n">username</span><span class="o">=</span><span class="s1">&#39;YUQING&#39;</span><span class="p">;</span>
 </span><span class='line'>
 </span><span class='line'><span class="n">USERNAME</span>   <span class="n">EVENT</span>                                    <span class="n">SQL_ID</span>
 </span><span class='line'><span class="c1">---------- ---------------------------------------- -------------</span>
 </span><span class='line'><span class="n">YUQING</span>     <span class="k">SQL</span><span class="o">*</span><span class="n">Net</span> <span class="n">message</span> <span class="k">from</span> <span class="n">client</span>
 </span><span class='line'><span class="n">YUQING</span>     <span class="n">enq</span><span class="p">:</span> <span class="n">TX</span> <span class="o">-</span> <span class="k">row</span> <span class="k">lock</span> <span class="n">contention</span>            <span class="mi">70</span><span class="n">nctf7574d1y</span>
 </span><span class='line'>
-</span><span class='line'><span class="n">sys</span><span class="o">@</span><span class="n">TOOLDB</span><span class="o">&gt;</span><span class="k">select</span> <span class="n">sql_id</span><span class="p">,</span><span class="n">sql_text</span> <span class="k">from</span> <span class="n">v</span><span class="err">$</span><span class="k">sql</span> <span class="k">where</span> <span class="n">sql_id</span><span class="o">=</span><span class="s1">&#39;70nctf7574d1y&#39;</span><span class="p">;</span>
+</span><span class='line'><span class="n">sys</span><span class="o">&gt;</span><span class="k">select</span> <span class="n">sql_id</span><span class="p">,</span><span class="n">sql_text</span> <span class="k">from</span> <span class="n">v</span><span class="err">$</span><span class="k">sql</span> <span class="k">where</span> <span class="n">sql_id</span><span class="o">=</span><span class="s1">&#39;70nctf7574d1y&#39;</span><span class="p">;</span>
 </span><span class='line'>
 </span><span class='line'><span class="n">SQL_ID</span>        <span class="n">SQL_TEXT</span>
 </span><span class='line'><span class="c1">------------- ----------------------------</span>

@@ -4,7 +4,7 @@
   <title><![CDATA[RookieDBA]]></title>
   <link href="http://RookieDBA.github.io/atom.xml" rel="self"/>
   <link href="http://RookieDBA.github.io/"/>
-  <updated>2014-08-22T01:50:13+08:00</updated>
+  <updated>2014-09-17T23:02:35+08:00</updated>
   <id>http://RookieDBA.github.io/</id>
   <author>
     <name><![CDATA[RookieDBA]]></name>
@@ -46,7 +46,7 @@
     <id>http://RookieDBA.github.io/blog/2014/08/22/an-case-of-enq-tx-row-lock-contention</id>
     <content type="html"><![CDATA[<p>年前，一个系统发布，刚上线就导致了大量的enq。之前一直没写下来，今天静下心记录一下。</p>
 
-<p>业务上对某张表T进行insert操作，并且伴随着并发。T表中的HID字段因为业务需求有唯一性约束，所以这个字段上有唯一性约束并且有唯一索引。而HID的值需要通过一次额WS调用才能取得，为了提高系统吞吐量，减少响应时间，这里采取异步化的方式。然而业务设计上insert时先给HID字段初始0值，然后再update。由于有唯一性索引的关系，加上并发，导致大量session等待这个行级锁。</p>
+<p>业务上对某张表T进行insert操作，并且伴随着并发。T表中的XXX字段因为业务需求有唯一性约束，所以这个字段上有唯一性约束并且有唯一索引。而XXX的值需要通过一次额WS调用才能取得，为了提高系统吞吐量，减少响应时间，这里采取异步化的方式。然而业务设计上insert时先给HID字段初始0值，然后再update。由于有唯一性索引的关系，加上并发，导致大量session等待这个行级锁。</p>
 
 <p>我们知道Oracle的索引会根据索引列的值进行排序，而对于唯一性索引来说，每个值在索引上只有一个位置可以写，所以大量的session等到0这个值的索引块的锁释放。</p>
 
@@ -66,12 +66,12 @@
 <span class='line-number'>10</span>
 <span class='line-number'>11</span>
 <span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">yuqing</span><span class="o">@</span><span class="n">TOOLDB</span><span class="o">&gt;</span><span class="k">set</span> <span class="n">sqlp</span> <span class="s1">&#39;SESSION A&gt;&#39;</span>
-</span><span class='line'><span class="k">SESSION</span> <span class="n">A</span><span class="o">&gt;</span><span class="k">create</span> <span class="k">table</span> <span class="n">t</span><span class="p">(</span><span class="n">hid</span> <span class="nb">number</span><span class="p">(</span><span class="mi">16</span><span class="p">));</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">yuqing</span><span class="o">&gt;</span><span class="k">set</span> <span class="n">sqlp</span> <span class="s1">&#39;SESSION A&gt;&#39;</span>
+</span><span class='line'><span class="k">SESSION</span> <span class="n">A</span><span class="o">&gt;</span><span class="k">create</span> <span class="k">table</span> <span class="n">t</span><span class="p">(</span><span class="n">xxx</span> <span class="nb">number</span><span class="p">(</span><span class="mi">16</span><span class="p">));</span>
 </span><span class='line'>
 </span><span class='line'><span class="k">Table</span> <span class="n">created</span><span class="p">.</span>
 </span><span class='line'>
-</span><span class='line'><span class="k">SESSION</span> <span class="n">A</span><span class="o">&gt;</span><span class="k">create</span> <span class="k">unique</span> <span class="k">index</span> <span class="n">t_hid_ind</span> <span class="k">on</span> <span class="n">t</span><span class="p">(</span><span class="n">hid</span><span class="p">)</span> <span class="n">tablespace</span> <span class="n">zhifb_data</span><span class="p">;</span>
+</span><span class='line'><span class="k">SESSION</span> <span class="n">A</span><span class="o">&gt;</span><span class="k">create</span> <span class="k">unique</span> <span class="k">index</span> <span class="n">t_hid_ind</span> <span class="k">on</span> <span class="n">t</span><span class="p">(</span><span class="n">xxx</span><span class="p">)</span> <span class="n">tablespace</span> <span class="n">xxxxxxxx</span><span class="p">;</span>
 </span><span class='line'>
 </span><span class='line'><span class="k">Index</span> <span class="n">created</span><span class="p">.</span>
 </span><span class='line'>
@@ -92,7 +92,7 @@
 
 <figure class='code'><figcaption><span>2、然后在session B，也执行同样的insert  </span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">yuqing</span><span class="o">@</span><span class="n">TOOLDB</span><span class="o">&gt;</span><span class="k">set</span> <span class="n">sqlp</span> <span class="s1">&#39;SESSION B&gt;&#39;</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">yuqing</span><span class="o">&gt;</span><span class="k">set</span> <span class="n">sqlp</span> <span class="s1">&#39;SESSION B&gt;&#39;</span>
 </span><span class='line'><span class="k">SESSION</span> <span class="n">B</span><span class="o">&gt;</span><span class="k">insert</span> <span class="k">into</span> <span class="n">t</span> <span class="k">values</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
 </span></code></pre></td></tr></table></div></figure>
 
@@ -112,14 +112,14 @@
 <span class='line-number'>10</span>
 <span class='line-number'>11</span>
 <span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">sys</span><span class="o">@</span><span class="n">TOOLDB</span><span class="o">&gt;</span><span class="k">select</span> <span class="n">USERNAME</span><span class="p">,</span><span class="n">EVENT</span><span class="p">,</span><span class="n">SQL_ID</span> <span class="k">from</span> <span class="n">v</span><span class="err">$</span><span class="k">session</span> <span class="k">where</span> <span class="n">username</span><span class="o">=</span><span class="s1">&#39;YUQING&#39;</span><span class="p">;</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="n">sys</span><span class="o">&gt;</span><span class="k">select</span> <span class="n">USERNAME</span><span class="p">,</span><span class="n">EVENT</span><span class="p">,</span><span class="n">SQL_ID</span> <span class="k">from</span> <span class="n">v</span><span class="err">$</span><span class="k">session</span> <span class="k">where</span> <span class="n">username</span><span class="o">=</span><span class="s1">&#39;YUQING&#39;</span><span class="p">;</span>
 </span><span class='line'>
 </span><span class='line'><span class="n">USERNAME</span>   <span class="n">EVENT</span>                                    <span class="n">SQL_ID</span>
 </span><span class='line'><span class="c1">---------- ---------------------------------------- -------------</span>
 </span><span class='line'><span class="n">YUQING</span>     <span class="k">SQL</span><span class="o">*</span><span class="n">Net</span> <span class="n">message</span> <span class="k">from</span> <span class="n">client</span>
 </span><span class='line'><span class="n">YUQING</span>     <span class="n">enq</span><span class="p">:</span> <span class="n">TX</span> <span class="o">-</span> <span class="k">row</span> <span class="k">lock</span> <span class="n">contention</span>            <span class="mi">70</span><span class="n">nctf7574d1y</span>
 </span><span class='line'>
-</span><span class='line'><span class="n">sys</span><span class="o">@</span><span class="n">TOOLDB</span><span class="o">&gt;</span><span class="k">select</span> <span class="n">sql_id</span><span class="p">,</span><span class="n">sql_text</span> <span class="k">from</span> <span class="n">v</span><span class="err">$</span><span class="k">sql</span> <span class="k">where</span> <span class="n">sql_id</span><span class="o">=</span><span class="s1">&#39;70nctf7574d1y&#39;</span><span class="p">;</span>
+</span><span class='line'><span class="n">sys</span><span class="o">&gt;</span><span class="k">select</span> <span class="n">sql_id</span><span class="p">,</span><span class="n">sql_text</span> <span class="k">from</span> <span class="n">v</span><span class="err">$</span><span class="k">sql</span> <span class="k">where</span> <span class="n">sql_id</span><span class="o">=</span><span class="s1">&#39;70nctf7574d1y&#39;</span><span class="p">;</span>
 </span><span class='line'>
 </span><span class='line'><span class="n">SQL_ID</span>        <span class="n">SQL_TEXT</span>
 </span><span class='line'><span class="c1">------------- ----------------------------</span>
@@ -193,10 +193,10 @@
 </pre></td><td class='code'><pre><code class='text'><span class='line'>File #85 added to control file as &#39;UNNAMED00085&#39; because
 </span><span class='line'>the parameter STANDBY_FILE_MANAGEMENT is set to MANUAL
 </span><span class='line'>The file should be manually created to continue.
-</span><span class='line'>Errors with log /data/arch/paycore2/paycore2_1_50043_794444625.arc
+</span><span class='line'>Errors with log /data/arch/xxxx/xxxx_1_50043_794444625.arc
 </span><span class='line'>MRP0: Background Media Recovery terminated with error 1274
-</span><span class='line'>Errors in file /opt/oracle/paycore2/diag/rdbms/paycore2/paycore2/trace/paycore2_pr00_16671.trc:
-</span><span class='line'>ORA-01274: cannot add datafile &#39;/data/oradata/paycore2/ESCROW_DATA_040.dbf&#39; - file could not be created
+</span><span class='line'>Errors in file /opt/oracle/xxxx/diag/rdbms/xxxx/xxxx/trace/xxxx_pr00_16671.trc:
+</span><span class='line'>ORA-01274: cannot add datafile &#39;/data/oradata/xxxx/XXXX_DATA_040.dbf&#39; - file could not be created
 </span><span class='line'>Recovery interrupted!
 </span><span class='line'>从alter日志上看，是备库的STANDBY_FILE_MANAGEMENT参数设置成了manual，所以主库创建数据文件备库不能自动添加。
 </span></code></pre></td></tr></table></div></figure>
@@ -232,23 +232,23 @@
 </span><span class='line'>
 </span><span class='line'>NAME                                                         STATUS
 </span><span class='line'>----------------------------------------------------------- -------
-</span><span class='line'>/data/oradata/paycore2/APPDATA1M_000.dbf                     ONLINE
-</span><span class='line'>/data/oradata/paycore2/APPDATA1M_001.dbf                     ONLINE
-</span><span class='line'>/data/oradata/paycore2/APPINDX1M_000.dbf                     ONLINE
-</span><span class='line'>/data/oradata/paycore2/APPINDX1M_001.dbf                     ONLINE
-</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_000.dbf                   ONLINE
-</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_001.dbf                   ONLINE
-</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_002.dbf                   ONLINE
-</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_003.dbf                   ONLINE
-</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_004.dbf                   ONLINE
-</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_005.dbf                   ONLINE
-</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_006.dbf                   ONLINE
-</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_007.dbf                   ONLINE
-</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_008.dbf                   ONLINE
-</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_009.dbf                   ONLINE
-</span><span class='line'>/data/oradata/paycore2/ESCROW_DATA_010.dbf                   ONLINE
+</span><span class='line'>/data/oradata/xxxx/xxxx_A1M_000.dbf                         ONLINE
+</span><span class='line'>/data/oradata/xxxx/xxxx_A1M_001.dbf                         ONLINE
+</span><span class='line'>/data/oradata/xxxx/xxxx_1M_000.dbf                          ONLINE
+</span><span class='line'>/data/oradata/xxxx/xxxx_1M_001.dbf                          ONLINE
+</span><span class='line'>/data/oradata/xxxx/xxxx_DATA_000.dbf                        ONLINE
+</span><span class='line'>/data/oradata/xxxx/xxxx_DATA_001.dbf                        ONLINE
+</span><span class='line'>/data/oradata/xxxx/xxxx_DATA_002.dbf                        ONLINE
+</span><span class='line'>/data/oradata/xxxx/xxxx_DATA_003.dbf                        ONLINE
+</span><span class='line'>/data/oradata/xxxx/xxxx_DATA_004.dbf                        ONLINE
+</span><span class='line'>/data/oradata/xxxx/xxxx_DATA_005.dbf                        ONLINE
+</span><span class='line'>/data/oradata/xxxx/xxxx_DATA_006.dbf                        ONLINE
+</span><span class='line'>/data/oradata/xxxx/xxxx_DATA_007.dbf                        ONLINE
+</span><span class='line'>/data/oradata/xxxx/xxxx_DATA_008.dbf                        ONLINE
+</span><span class='line'>/data/oradata/xxxx/xxxx_DATA_009.dbf                        ONLINE
+</span><span class='line'>/data/oradata/xxxx/xxxx_DATA_010.dbf                        ONLINE
 </span><span class='line'>...
-</span><span class='line'>/opt/oracle/paycore2/products/11.2.0/dbs/UNNAMED00085        RECOVER
+</span><span class='line'>/opt/oracle/xxxx/products/11.2.0/dbs/UNNAMED00085        RECOVER
 </span><span class='line'>
 </span><span class='line'>85 rows selected.
 </span></code></pre></td></tr></table></div></figure>
@@ -263,7 +263,7 @@
 1、备库重新创建数据文件</p>
 
 <figure class='code'><figcaption><span>1、备库重新创建数据文件</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">SQL</span><span class="o">&gt;</span><span class="k">alter</span> <span class="k">database</span> <span class="k">create</span> <span class="n">datafile</span> <span class="s1">&#39;/opt/oracle/paycore2/products/11.2.0/dbs/UNNAMED00085&#39;</span> <span class="k">as</span> <span class="s1">&#39;/data/oradata/paycore2/ESCROW_DATA_040.dbf&#39;</span><span class="p">;</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">SQL</span><span class="o">&gt;</span><span class="k">alter</span> <span class="k">database</span> <span class="k">create</span> <span class="n">datafile</span> <span class="s1">&#39;/opt/oracle/xxxx/products/11.2.0/dbs/UNNAMED00085&#39;</span> <span class="k">as</span> <span class="s1">&#39;/data/oradata/xxxx/xxxx_DATA_040.dbf&#39;</span><span class="p">;</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
